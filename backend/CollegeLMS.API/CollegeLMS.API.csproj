@@ -9,16 +9,16 @@
 
   <ItemGroup>
     <!-- Entity Framework Core + PostgreSQL -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
 
     <!-- JWT Authentication -->
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.16.0" />
 
     <!-- Email -->
-    <PackageReference Include="MailKit" Version="4.3.0" />
+    <PackageReference Include="MailKit" Version="4.15.1" />
 
     <!-- Swagger / OpenAPI -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />

@@ -1,36 +1,100 @@
+using CollegeLMS.API.Contracts;
+using CollegeLMS.API.Extensions;
+using CollegeLMS.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CollegeLMS.API.Controllers;
 
-/// <summary>
-/// ★ Innovation Feature — Automated Deadline Reminder System
-/// Serves in-app notifications to the Angular frontend.
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class NotificationController : ControllerBase
+public class NotificationController(NotificationService notificationService) : ControllerBase
 {
-    // TODO (Person 3): Inject NotificationService
-
-    /// <summary>GET /api/notification?userId={id} — Fetch all notifications for user</summary>
     [HttpGet]
-    public IActionResult GetByUser([FromQuery] int userId) =>
-        Ok(new { message = $"Notifications for user {userId} — not yet implemented" });
+    public async Task<ActionResult<IEnumerable<NotificationResponse>>> GetByUser(
+        [FromQuery] int userId,
+        CancellationToken cancellationToken)
+    {
+        var accessResult = await EnsureAccessibleAsync(userId, cancellationToken);
+        if (accessResult is not null)
+        {
+            return accessResult;
+        }
 
-    /// <summary>GET /api/notification/unread-count?userId={id}</summary>
+        var notifications = await notificationService.GetByUserAsync(userId, cancellationToken);
+        return Ok(notifications.Select(ToResponse));
+    }
+
     [HttpGet("unread-count")]
-    public IActionResult GetUnreadCount([FromQuery] int userId) =>
-        Ok(new { message = $"Unread count for user {userId} — not yet implemented" });
+    public async Task<ActionResult<UnreadCountResponse>> GetUnreadCount(
+        [FromQuery] int userId,
+        CancellationToken cancellationToken)
+    {
+        var accessResult = await EnsureAccessibleAsync(userId, cancellationToken);
+        if (accessResult is not null)
+        {
+            return accessResult;
+        }
 
-    /// <summary>PATCH /api/notification/{id}/read — Mark single notification as read</summary>
-    [HttpPatch("{id}/read")]
-    public IActionResult MarkAsRead(int id) =>
-        Ok(new { message = $"Mark notification {id} as read — not yet implemented" });
+        var count = await notificationService.GetUnreadCountAsync(userId, cancellationToken);
+        return Ok(new UnreadCountResponse(count));
+    }
 
-    /// <summary>PATCH /api/notification/read-all?userId={id} — Mark all as read</summary>
+    [HttpPatch("{id:int}/read")]
+    public async Task<IActionResult> MarkAsRead(int id, CancellationToken cancellationToken)
+    {
+        var notification = await notificationService.GetByIdAsync(id, cancellationToken);
+        if (notification is null)
+        {
+            return NotFound();
+        }
+
+        if (!User.CanAccessUser(notification.UserId))
+        {
+            return Forbid();
+        }
+
+        await notificationService.MarkAsReadAsync(id, cancellationToken);
+        return NoContent();
+    }
+
     [HttpPatch("read-all")]
-    public IActionResult MarkAllAsRead([FromQuery] int userId) =>
-        Ok(new { message = $"Mark all read for user {userId} — not yet implemented" });
+    public async Task<IActionResult> MarkAllAsRead(
+        [FromQuery] int userId,
+        CancellationToken cancellationToken)
+    {
+        var accessResult = await EnsureAccessibleAsync(userId, cancellationToken);
+        if (accessResult is not null)
+        {
+            return accessResult;
+        }
+
+        await notificationService.MarkAllAsReadAsync(userId, cancellationToken);
+        return NoContent();
+    }
+
+    private async Task<ActionResult?> EnsureAccessibleAsync(int userId, CancellationToken cancellationToken)
+    {
+        if (!User.CanAccessUser(userId))
+        {
+            return Forbid();
+        }
+
+        if (!await notificationService.UserExistsAsync(userId, cancellationToken))
+        {
+            return NotFound();
+        }
+
+        return null;
+    }
+
+    private static NotificationResponse ToResponse(CollegeLMS.API.Models.Notification notification) =>
+        new(
+            notification.Id,
+            notification.UserId,
+            notification.Message,
+            notification.IsRead,
+            notification.CreatedAt,
+            notification.ReadAt);
 }
