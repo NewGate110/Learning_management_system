@@ -1,5 +1,4 @@
 import { Component, OnInit }  from '@angular/core';
-import { CommonModule }        from '@angular/common';
 import { RouterLink }          from '@angular/router';
 import { MatToolbarModule }    from '@angular/material/toolbar';
 import { MatButtonModule }     from '@angular/material/button';
@@ -12,7 +11,7 @@ import { NotificationDropdownComponent } from '../notification-dropdown/notifica
   selector: 'app-navbar',
   standalone: true,
   imports: [
-    CommonModule, RouterLink,
+    RouterLink,
     MatToolbarModule, MatButtonModule, MatIconModule, MatBadgeModule,
     NotificationDropdownComponent,
   ],
@@ -32,7 +31,9 @@ import { NotificationDropdownComponent } from '../notification-dropdown/notifica
           notifications
         </mat-icon>
       </button>
-      <app-notification-dropdown *ngIf="showDropdown" />
+      @if (showDropdown) {
+        <app-notification-dropdown />
+      }
 
       <button mat-button (click)="logout()">Logout</button>
     </mat-toolbar>

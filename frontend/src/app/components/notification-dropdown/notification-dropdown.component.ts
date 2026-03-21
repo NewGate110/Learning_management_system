@@ -1,7 +1,7 @@
 /// ★ Innovation Feature — Automated Deadline Reminder System
 
 import { Component, OnInit } from '@angular/core';
-import { CommonModule }       from '@angular/common';
+import { DatePipe }           from '@angular/common';
 import { MatListModule }      from '@angular/material/list';
 import { MatButtonModule }    from '@angular/material/button';
 import { MatDividerModule }   from '@angular/material/divider';
@@ -13,7 +13,7 @@ import { AuthService }         from '../../services/auth.service';
 @Component({
   selector: 'app-notification-dropdown',
   standalone: true,
-  imports: [CommonModule, MatListModule, MatButtonModule, MatDividerModule, MatIconModule],
+  imports: [DatePipe, MatListModule, MatButtonModule, MatDividerModule, MatIconModule],
   template: `
     <div class="notification-panel mat-elevation-z4">
       <div class="panel-header">
@@ -22,17 +22,19 @@ import { AuthService }         from '../../services/auth.service';
       </div>
       <mat-divider />
 
-      <mat-list *ngIf="notifications.length; else empty">
-        <mat-list-item *ngFor="let n of notifications" [class.unread]="!n.isRead">
-          <mat-icon matListItemIcon>{{ n.isRead ? 'notifications_none' : 'notifications_active' }}</mat-icon>
-          <span matListItemTitle>{{ n.message }}</span>
-          <span matListItemLine>{{ n.createdAt | date:'short' }}</span>
-        </mat-list-item>
-      </mat-list>
-
-      <ng-template #empty>
+      @if (notifications.length) {
+        <mat-list>
+          @for (n of notifications; track n.id) {
+            <mat-list-item [class.unread]="!n.isRead">
+              <mat-icon matListItemIcon>{{ n.isRead ? 'notifications_none' : 'notifications_active' }}</mat-icon>
+              <span matListItemTitle>{{ n.message }}</span>
+              <span matListItemLine>{{ n.createdAt | date:'short' }}</span>
+            </mat-list-item>
+          }
+        </mat-list>
+      } @else {
         <p class="empty-msg">No notifications</p>
-      </ng-template>
+      }
     </div>
   `,
   styles: [`

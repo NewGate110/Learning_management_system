@@ -1,6 +1,6 @@
 # Handoff Note — Person 4 (Frontend Developer & QA)
 
-From Person 1 | Updated: 2026-03-18
+From Person 1 | Updated: 2026-03-22
 
 ---
 
@@ -30,18 +30,18 @@ ng serve
 ## What is already done
 
 ### Packages installed (`package.json`)
-- `@angular/core`, `@angular/material`, `@angular/cdk` — v18
-- `@angular/router`, `@angular/forms` — v18
-- `ng2-charts` ^6.0.0 + `chart.js` ^4.4.0 — for all progress charts
+- `@angular/core`, `@angular/material`, `@angular/cdk` — v21
+- `@angular/router`, `@angular/forms` — v21
+- `ng2-charts` ^10.0.0 + `chart.js` ^4.4.0
 - `rxjs` ~7.8.0
-- TypeScript strict mode enabled
+- TypeScript 5.9, strict mode enabled
 
-### App Config & Bootstrap (`src/app/app.config.ts`, `src/main.ts`)
-- Standalone component architecture throughout — no `NgModule` needed
-- `provideRouter`, `provideHttpClient`, Angular Material theme are configured
+### App Config & Bootstrap
+- Standalone component architecture throughout — no `NgModule`
+- `provideRouter`, `provideHttpClient`, Angular Material configured
 
-### Routing (`src/app/app.routes.ts`) — fully set up
-All routes use lazy-loaded standalone components. Already configured:
+### Routing — fully set up
+All routes use lazy-loaded standalone components:
 
 | Route | Component | Guard |
 |-------|-----------|-------|
@@ -53,127 +53,213 @@ All routes use lazy-loaded standalone components. Already configured:
 | `/quiz` | `QuizComponent` | AuthGuard |
 | `/progress` ★ | `ProgressDashboardComponent` | AuthGuard |
 | `/admin` | `AdminPanelComponent` | AuthGuard |
-| `**` | redirects to `/login` | |
+| `**` | redirect → `/login` | |
 
-### AuthGuard (`src/app/guards/auth.guard.ts`)
-Already implemented — checks `AuthService.isLoggedIn()` and redirects to `/login` if false. You don't need to touch this.
+### AuthGuard
+Already implemented — checks `AuthService.isLoggedIn()` and redirects to `/login` if false.
 
-### AuthService (`src/app/services/auth.service.ts`) — fully implemented
+### AuthService — fully implemented
 - `login(email, password)` — POSTs to `/api/auth/login`, stores `token`, `userId`, `role` in localStorage
 - `logout()` — clears localStorage, navigates to `/login`
 - `isLoggedIn()` — returns bool
 - `userId` getter — returns number
-- `role` getter — returns `"Student"`, `"Instructor"`, or `"Admin"`
+- `role` getter — returns `Student`, `Instructor`, or `Admin`
 
-### ApiService (`src/app/services/api.service.ts`)
-Base HTTP service — use this for **all** backend calls. Do not use `HttpClient` directly in pages.
+### ApiService
+Base HTTP service — use this for **all** backend calls. Automatically attaches `Authorization: Bearer <token>` to every request.
 
-### NotificationService ★ (`src/app/services/notification.service.ts`)
-Stubbed — you need to implement polling and the unread count observable. It calls `GET /api/notification`.
+### NotificationService ★
+Handles fetching notifications and unread count. Calls `/api/notification`.
 
-### ProgressService ★ (`src/app/services/progress.service.ts`)
-Stubbed — calls the 4 `GET /api/progress/*` endpoints and returns observables for each chart component.
-
-### Models (`src/app/models/`)
-TypeScript interfaces are scaffolded:
-- `user.model.ts` — User interface
-- `course.model.ts` — Course interface
-- `notification.model.ts` — Notification interface (has `id`, `message`, `isRead`, `createdAt`)
-
-### All page & component files exist (empty shells)
-You just need to add the `@Component` decorator template and logic:
-
-**Pages:**
-- `login/login.component.ts`
-- `dashboard/dashboard.component.ts`
-- `courses/courses.component.ts`
-- `course-detail/course-detail.component.ts`
-- `assignments/assignments.component.ts`
-- `quiz/quiz.component.ts`
-- `progress-dashboard/progress-dashboard.component.ts` ★
-- `admin-panel/admin-panel.component.ts`
-
-**Components:**
-- `navbar/navbar.component.ts` — ★ notification bell goes here
-- `sidebar/sidebar.component.ts`
-- `notification-dropdown/notification-dropdown.component.ts` ★
-- `progress-charts/course-progress-bar/course-progress-bar.component.ts` ★
-- `progress-charts/grade-line-chart/grade-line-chart.component.ts` ★
-- `progress-charts/submission-rate-chart/submission-rate-chart.component.ts` ★
-- `progress-charts/upcoming-deadlines-widget/upcoming-deadlines-widget.component.ts` ★
+### ProgressService ★
+Calls the `/api/progress/*` endpoints and returns observables for chart components.
 
 ---
 
-## Your tasks
+## Test Accounts (already seeded)
 
-### 1. Login Page (`/login`)
-- Reactive Form with `email` and `password` fields (use `FormBuilder`)
-- On submit, call `AuthService.login(email, password).subscribe(...)`
-- On success, navigate to `/dashboard`
-- Show error message on failure
-- Use Angular Material `mat-form-field`, `mat-input`, `mat-button`
-
-### 2. Dashboard (`/dashboard`)
-- Fetch and display enrolled courses summary
-- ★ Show notification alert widget (recent unread reminders from `NotificationService`)
-- Link to `/progress` for the full analytics view
-
-### 3. Courses (`/courses` and `/courses/:id`)
-- List all courses via `ApiService.get('/course')`
-- Course detail page shows assignments and allows submission
-
-### 4. Assignments (`/assignments`)
-- List assignments with deadlines
-- Reactive Form for submission
-
-### 5. Quiz (`/quiz`)
-- Basic quiz UI — questions and answer selection
-
-### 6. Progress Dashboard ★ Innovation (`/progress`)
-Use the 4 chart components — each takes data as `@Input()`:
-- `<app-course-progress-bar>` — `ng2-charts` horizontal bar chart
-- `<app-grade-line-chart>` — `ng2-charts` line chart
-- `<app-submission-rate-chart>` — `ng2-charts` doughnut chart
-- `<app-upcoming-deadlines-widget>` — list of upcoming deadlines
-
-Fetch data via `ProgressService` and pass to each component.
-
-### 7. Navbar ★ Innovation
-- Bell icon (`mat-icon`) with badge showing unread count from `NotificationService`
-- Clicking the bell opens `<app-notification-dropdown>`
-
-### 8. Notification Dropdown ★ Innovation
-- List recent `Notification` objects from `NotificationService`
-- Show message, timestamp, bold if unread
-- On click, call `NotificationService.markAsRead(id)` and update UI
-
-### 9. Admin Panel (`/admin`)
-- Accessible only to users with `role === 'Admin'`
-- Manage users and courses
+| Name | Email | Password | Role |
+|------|-------|----------|------|
+| Admin User | admin@lms.com | Password123! | Admin |
+| Jane Instructor | instructor@lms.com | Password123! | Instructor |
+| John Student | student@lms.com | Password123! | Student |
 
 ---
 
-## Key patterns to follow
+## Your tasks — New Features
+
+### 1. Role-Based Dashboards
+
+Each role must see a different dashboard on login. Use `AuthService.role` to determine which dashboard to render.
+
+**Student Dashboard** (`/dashboard`):
+- Enrolled courses and module progress (InProgress / Passed / Failed)
+- Attendance % per module
+- Upcoming assignments and assessments
+- Timetable for the current week
+- Mini calendar widget
+- Unread notifications
+
+**Instructor Dashboard** (`/dashboard`):
+- Courses being taught
+- List of submissions pending grading
+- Attendance marking shortcut
+- Upcoming timetable sessions
+- Calendar
+
+**Admin Dashboard** (`/dashboard`):
+- System overview (total users, courses, modules)
+- Quick links to manage courses, modules, users
+- Full timetable roster
+- System-wide calendar
+
+---
+
+### 2. Modules
+
+New routes and pages needed:
+
+| Route | Purpose |
+|-------|---------|
+| `/courses/:id/modules` | List of modules in a course |
+| `/modules/:id` | Module detail — assignments, assessments, timetable |
+
+Module list must show:
+- Module title, type (Sequential / Compulsory / Optional), student's status
+- Lock icon on Sequential modules not yet unlocked
+- Progress indicator per module
+
+---
+
+### 3. Attendance
+
+- Instructor view: mark present/absent per student per session
+- Admin view: same as instructor plus ability to edit any existing attendance record across all modules
+- Student view: show attendance % per module, warning if below 80%
+- If student attendance is below 80% for a module — show locked state on assignment submission
+
+---
+
+### 4. Assignments & Submissions
+
+- Student uploads a file to submit an assignment (check attendance % first)
+- Show lock if attendance below 80%
+- Show submission status: Not Submitted / Submitted / Graded
+- Show individual grade and feedback once graded
+
+---
+
+### 5. Assessments
+
+- Show as scheduled events (date, time, location, duration)
+- Appear in upcoming list and calendar
+- Show grade once released by instructor
+
+---
+
+### 6. Grading Views
+
+- Instructor: list of submitted assignments with grade input and feedback field
+- Student: view all grades per assignment and assessment separately
+- Final module grade shown only after all items are graded
+- Final grade displayed prominently on module completion
+
+---
+
+### 7. Timetable
+
+- Student and Instructor: weekly timetable view (Mon–Fri grid)
+- Show module name, time, location per slot
+- Cancelled sessions shown as struck-through with reason
+- Rescheduled sessions show new date and time
+- Admin: full roster management UI — add/edit/delete timetable slots
+
+---
+
+### 8. Calendar
+
+New page at `/calendar`:
+- Monthly calendar view showing all events
+- Each user sees only their relevant events:
+  - Assignment deadlines
+  - Assessment dates
+  - Timetable sessions
+  - Cancellations / reschedules
+  - Course start/end dates
+- Click on event to see details
+
+---
+
+### 9. Notifications — Extended
+
+Extend the notification dropdown and portal to handle new triggers:
+
+| Trigger | What to show |
+|---------|-------------|
+| Class cancelled | "Your [Module] class on [Date] has been cancelled" |
+| Class rescheduled | "Your [Module] class has been moved to [New Date/Time]" |
+| Assignment graded | "[Assignment] has been graded — [Score]" |
+| Final grade released | "Your final grade for [Module] is now available" |
+| Deadline approaching | "[Assignment] is due in [X] days" |
+
+---
+
+### 10. Admin Panel — Extended
+
+Admin panel must support:
+- Add / edit / delete Courses
+- Add / edit / delete Modules (set type: Sequential / Compulsory / Optional, set order)
+- Add / edit / delete Users
+- Manage timetable roster (add/edit/delete TimetableSlots)
+- View all enrollments
+
+---
+
+### 11. Progress Dashboard ★ (existing — extend)
+
+Extend the existing progress dashboard to show:
+- Per-module completion status
+- Attendance % per module
+- Grade breakdown per assignment and assessment
+- Final module grade (when available)
+
+---
+
+## New Models needed (TypeScript interfaces)
+
+Add these to `src/app/models/`:
+
+```typescript
+module.model.ts         — id, courseId, title, type, order, status
+assessment.model.ts     — id, moduleId, title, scheduledAt, duration
+submission.model.ts     — id, assignmentId, studentId, fileUrl, submittedAt
+assignment-grade.model.ts — id, submissionId, score, feedback, gradedAt
+assessment-grade.model.ts — id, assessmentId, studentId, score, gradedAt
+module-progress.model.ts  — studentId, moduleId, status, finalGrade
+attendance.model.ts     — sessionId, studentId, isPresent
+timetable-slot.model.ts — id, moduleId, dayOfWeek, startTime, endTime, location
+calendar-event.model.ts — id, title, date, type, details
+```
+
+---
+
+## Key Patterns to Follow
 
 ### Making API calls
-Always use `ApiService`, never inject `HttpClient` directly:
 ```typescript
-// Good
-constructor(private api: ApiService) {}
-this.api.get<Course[]>('/course').subscribe(courses => this.courses = courses);
-
-// Bad
-constructor(private http: HttpClient) {}
+// Always use ApiService
+this.api.get<Module[]>(`/module?courseId=${id}`).subscribe(modules => this.modules = modules);
 ```
 
 ### Role-based UI
-Use `AuthService.role` to conditionally show admin controls:
 ```typescript
 get isAdmin(): boolean { return this.authService.role === 'Admin'; }
+get isInstructor(): boolean { return this.authService.role === 'Instructor'; }
+get isStudent(): boolean { return this.authService.role === 'Student'; }
 ```
 
 ### No `any` types
-Always use the interfaces from `src/app/models/`. Add new interfaces there if needed.
+Always use interfaces from `src/app/models/`.
 
 ### Reactive Forms (not template-driven)
 ```typescript
@@ -183,9 +269,15 @@ form = this.fb.group({
 });
 ```
 
+### New control flow syntax (Angular 21)
+```html
+@if (isAdmin) { <app-admin-panel /> }
+@for (module of modules; track module.id) { <app-module-card [module]="module" /> }
+```
+
 ---
 
-## Tests (your QA responsibility)
+## Tests (QA responsibility)
 
 Write the test plan in `tests/`. Each test case must include:
 - **Test ID** (e.g. TC-01)
@@ -194,18 +286,26 @@ Write the test plan in `tests/`. Each test case must include:
 - **Expected result**
 - **Actual result**
 
-Minimum 3 test cases, covering:
-1. A core feature (e.g. login, view courses)
-2. A second core feature (e.g. assignment submission)
-3. At least one innovation feature (e.g. notification bell shows unread count, progress chart renders)
+Minimum test cases to cover:
+1. Login — each role sees the correct dashboard
+2. Student blocked from submitting if attendance below 80%
+3. Instructor marks attendance
+4. Assignment submission and grading flow
+5. Class cancellation triggers notification
+6. Calendar shows correct events per role
+7. Module locked until previous sequential module is passed
+8. Progress dashboard renders charts with real data
 
 ---
 
-## Coding conventions
+## Coding Conventions
 
 - Standalone components only — no `NgModule`
 - Strict TypeScript — no `any`
 - Angular Material for all UI components
+- New control flow: `@if`, `@for` instead of `*ngIf`, `*ngFor`
 - Commits: `feat:`, `fix:`, `chore:` prefixes
-- Branch from `dev`: `git checkout -b feature/login-page`
+- Branch from `dev`: `git checkout -b feature/<name>`
 - Open a Pull Request into `dev` when done — Person 1 reviews
+
+For full feature details see `docs/feature-plan.md`.
