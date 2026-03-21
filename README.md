@@ -18,7 +18,7 @@
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/<your-org>/college-lms.git
+git clone https://github.com/NewGate110/Learning_management_system.git
 cd college-lms
 ```
 
