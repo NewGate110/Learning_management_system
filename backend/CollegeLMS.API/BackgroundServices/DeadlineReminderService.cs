@@ -1,59 +1,123 @@
+using CollegeLMS.API.Data;
+using CollegeLMS.API.Models;
+using CollegeLMS.API.Services;
+using Microsoft.EntityFrameworkCore;
+
 namespace CollegeLMS.API.BackgroundServices;
 
-/// <summary>
-/// ★ Innovation Feature — Automated Deadline Reminder System
-/// Runs on a scheduled interval, checks for upcoming assignment deadlines,
-/// sends email reminders via EmailService, and creates in-app Notifications.
-/// </summary>
 public class DeadlineReminderService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<DeadlineReminderService> _logger;
-
-    // Check every hour in production; adjust for testing
-    private readonly TimeSpan _interval = TimeSpan.FromHours(1);
+    private readonly TimeSpan _interval;
+    private readonly TimeSpan _lookAheadWindow;
 
     public DeadlineReminderService(
         IServiceScopeFactory scopeFactory,
+        IConfiguration config,
         ILogger<DeadlineReminderService> logger)
     {
         _scopeFactory = scopeFactory;
-        _logger       = logger;
+        _logger = logger;
+        _interval = TimeSpan.FromMinutes(GetPositiveInt(config, "REMINDER_INTERVAL_MINUTES", 60));
+        _lookAheadWindow = TimeSpan.FromHours(GetPositiveInt(config, "REMINDER_LOOKAHEAD_HOURS", 48));
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("DeadlineReminderService started.");
+        _logger.LogInformation(
+            "Deadline reminder service started with a {IntervalMinutes} minute interval and a {LookAheadHours} hour look-ahead window.",
+            _interval.TotalMinutes,
+            _lookAheadWindow.TotalHours);
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await CheckAndSendRemindersAsync();
+                await CheckAndSendRemindersAsync(stoppingToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in DeadlineReminderService.");
+                _logger.LogError(ex, "Deadline reminder service run failed.");
             }
 
             await Task.Delay(_interval, stoppingToken);
         }
     }
 
-    private async Task CheckAndSendRemindersAsync()
+    private async Task CheckAndSendRemindersAsync(CancellationToken cancellationToken)
     {
         using var scope = _scopeFactory.CreateScope();
 
-        // TODO (Person 3):
-        // 1. Resolve AppDbContext, EmailService, NotificationService from scope
-        // 2. Query assignments where Deadline is within the next 24-48 hours
-        // 3. For each assignment, find enrolled students
-        // 4. Call EmailService.SendReminderAsync(student, assignment)
-        // 5. Call NotificationService.CreateAsync(userId, message)
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+        var notificationService = scope.ServiceProvider.GetRequiredService<NotificationService>();
 
-        _logger.LogInformation("[{Time}] Deadline check ran — implementation pending.",
-            DateTime.UtcNow);
+        var now = DateTime.UtcNow;
+        var cutoff = now.Add(_lookAheadWindow);
 
-        await Task.CompletedTask;
+        var dueAssignments = await db.Assignments
+            .AsNoTracking()
+            .Include(assignment => assignment.Course)
+                .ThenInclude(course => course!.Students)
+            .Include(assignment => assignment.Grades)
+            .Where(assignment => assignment.Deadline >= now && assignment.Deadline <= cutoff)
+            .OrderBy(assignment => assignment.Deadline)
+            .ToListAsync(cancellationToken);
+
+        var remindersCreated = 0;
+
+        foreach (var assignment in dueAssignments)
+        {
+            var course = assignment.Course;
+            if (course is null)
+            {
+                continue;
+            }
+
+            var submittedStudentIds = assignment.Grades
+                .Select(grade => grade.UserId)
+                .ToHashSet();
+
+            foreach (var student in course.Students.Where(student =>
+                         student.Role == UserRoles.Student &&
+                         !submittedStudentIds.Contains(student.Id)))
+            {
+                var message =
+                    $"Reminder: '{assignment.Title}' for {course.Title} is due on {assignment.Deadline:yyyy-MM-dd HH:mm} UTC.";
+
+                var created = await notificationService.CreateAsync(
+                    student.Id,
+                    message,
+                    assignment.Id,
+                    cancellationToken);
+
+                if (!created)
+                {
+                    continue;
+                }
+
+                remindersCreated++;
+
+                await emailService.SendReminderAsync(
+                    student.Email,
+                    student.Name,
+                    assignment.Title,
+                    assignment.Deadline,
+                    cancellationToken);
+            }
+        }
+
+        _logger.LogInformation(
+            "Deadline reminder check completed. {AssignmentCount} assignments were in scope and {ReminderCount} reminders were created.",
+            dueAssignments.Count,
+            remindersCreated);
+    }
+
+    private static int GetPositiveInt(IConfiguration config, string key, int defaultValue)
+    {
+        return int.TryParse(config[key], out var parsedValue) && parsedValue > 0
+            ? parsedValue
+            : defaultValue;
     }
 }

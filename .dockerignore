@@ -1,4 +1,31 @@
-backend/**/obj/
+# Git metadata
+.git
+.gitignore
+
+# Environment and local-only files
+.env
+.env.*
+!.env.example
+
+# Build output
 backend/**/bin/
+backend/**/obj/
 frontend/node_modules/
 frontend/dist/
+frontend/.angular/
+frontend/coverage/
+
+# Editor and OS files
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Non-runtime project files
+docs/
+tests/

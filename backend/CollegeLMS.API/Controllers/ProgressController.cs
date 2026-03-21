@@ -1,41 +1,89 @@
+using CollegeLMS.API.Extensions;
+using CollegeLMS.API.Models;
+using CollegeLMS.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CollegeLMS.API.Controllers;
 
-/// <summary>
-/// ★ Innovation Feature — Student Progress Dashboard
-/// Returns per-student analytics data ready for ng2-charts / ngx-charts.
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ProgressController : ControllerBase
+public class ProgressController(ProgressService progressService) : ControllerBase
 {
-    // TODO (Person 3): Inject ProgressService
+    [HttpGet("{userId:int}")]
+    public async Task<IActionResult> GetProgress(int userId, CancellationToken cancellationToken)
+    {
+        var accessResult = await EnsureAccessibleAsync(userId, cancellationToken);
+        if (accessResult is not null)
+        {
+            return accessResult;
+        }
 
-    /// <summary>GET /api/progress/{userId} — Full progress summary</summary>
-    [HttpGet("{userId}")]
-    public IActionResult GetProgress(int userId) =>
-        Ok(new { message = $"Progress summary for user {userId} — not yet implemented" });
+        var summary = await progressService.GetProgressSummaryAsync(userId, cancellationToken);
+        return Ok(summary);
+    }
 
-    /// <summary>GET /api/progress/{userId}/grades — Grade trend over time</summary>
-    [HttpGet("{userId}/grades")]
-    public IActionResult GetGradeTrend(int userId) =>
-        Ok(new { message = $"Grade trend for user {userId} — not yet implemented" });
+    [HttpGet("{userId:int}/grades")]
+    public async Task<IActionResult> GetGradeTrend(int userId, CancellationToken cancellationToken)
+    {
+        var accessResult = await EnsureAccessibleAsync(userId, cancellationToken);
+        if (accessResult is not null)
+        {
+            return accessResult;
+        }
 
-    /// <summary>GET /api/progress/{userId}/courses — Per-course completion %</summary>
-    [HttpGet("{userId}/courses")]
-    public IActionResult GetCourseCompletion(int userId) =>
-        Ok(new { message = $"Course completion for user {userId} — not yet implemented" });
+        return Ok(await progressService.GetGradeTrendAsync(userId, cancellationToken));
+    }
 
-    /// <summary>GET /api/progress/{userId}/submissions — Submission rate stats</summary>
-    [HttpGet("{userId}/submissions")]
-    public IActionResult GetSubmissionRate(int userId) =>
-        Ok(new { message = $"Submission rate for user {userId} — not yet implemented" });
+    [HttpGet("{userId:int}/courses")]
+    public async Task<IActionResult> GetCourseCompletion(int userId, CancellationToken cancellationToken)
+    {
+        var accessResult = await EnsureAccessibleAsync(userId, cancellationToken);
+        if (accessResult is not null)
+        {
+            return accessResult;
+        }
 
-    /// <summary>GET /api/progress/{userId}/deadlines — Upcoming deadlines</summary>
-    [HttpGet("{userId}/deadlines")]
-    public IActionResult GetUpcomingDeadlines(int userId) =>
-        Ok(new { message = $"Upcoming deadlines for user {userId} — not yet implemented" });
+        return Ok(await progressService.GetCourseCompletionAsync(userId, cancellationToken));
+    }
+
+    [HttpGet("{userId:int}/submissions")]
+    public async Task<IActionResult> GetSubmissionRate(int userId, CancellationToken cancellationToken)
+    {
+        var accessResult = await EnsureAccessibleAsync(userId, cancellationToken);
+        if (accessResult is not null)
+        {
+            return accessResult;
+        }
+
+        return Ok(await progressService.GetSubmissionRateAsync(userId, cancellationToken));
+    }
+
+    [HttpGet("{userId:int}/deadlines")]
+    public async Task<IActionResult> GetUpcomingDeadlines(int userId, CancellationToken cancellationToken)
+    {
+        var accessResult = await EnsureAccessibleAsync(userId, cancellationToken);
+        if (accessResult is not null)
+        {
+            return accessResult;
+        }
+
+        return Ok(await progressService.GetUpcomingDeadlinesAsync(userId, cancellationToken));
+    }
+
+    private async Task<IActionResult?> EnsureAccessibleAsync(int userId, CancellationToken cancellationToken)
+    {
+        if (!User.CanAccessUser(userId) && !User.IsInRole(UserRoles.Instructor))
+        {
+            return Forbid();
+        }
+
+        if (!await progressService.UserExistsAsync(userId, cancellationToken))
+        {
+            return NotFound();
+        }
+
+        return null;
+    }
 }

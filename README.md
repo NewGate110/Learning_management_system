@@ -2,7 +2,7 @@
 
 **Enhanced Moodle-style Learning Management System**
 
-**Stack:** ASP.NET Core 10 (C#) · Angular 18 + Angular Material · PostgreSQL 16 · Docker Compose
+**Stack:** ASP.NET Core 10 (C#) · Angular 21 + Angular Material · PostgreSQL 18 · Docker Compose
 
 **Innovation Features:**
 - ★ Student Progress Dashboard — visual analytics with ng2-charts (grade trends, submission rates, course progress, upcoming deadlines)
@@ -23,10 +23,27 @@ cd college-lms
 ```
 
 ### 2. Configure environment variables
-```bash
-cp docker/.env.example .env
-# Edit .env — set a strong POSTGRES_PASSWORD, JWT_SECRET, and mail credentials
+
+A `.env` file is required in the project root. Create one with the following contents:
+
+```env
+POSTGRES_DB=collegelms
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=admin123
+
+JWT_SECRET=changeme_at_least_32_chars_secret_key
+JWT_ISSUER=CollegeLMS
+JWT_AUDIENCE=CollegeLMSUsers
+JWT_EXPIRY_HOURS=8
+
+MAIL_HOST=smtp.sendgrid.net
+MAIL_PORT=587
+MAIL_USER=apikey
+MAIL_PASSWORD=your_sendgrid_api_key
+MAIL_FROM=noreply@yourdomain.com
 ```
+
+> Change `POSTGRES_PASSWORD` and `JWT_SECRET` before deploying to any shared environment.
 
 Key variables in `.env`:
 
@@ -56,7 +73,78 @@ docker compose up --build
 | API      | http://localhost:8080         |
 | Swagger  | http://localhost:8080/swagger |
 
-> EF Core migrations run automatically on backend startup — no manual migration step needed.
+> EF Core migrations run automatically on backend startup via `MigrateAsync()` — no manual migration step needed.
+
+#### Resetting the database
+
+To wipe all data and re-run migrations from scratch:
+
+```bash
+docker compose down -v   # removes containers AND the postgres_data volume
+docker compose up --build
+```
+
+---
+
+## Docker Configuration Notes
+
+The following fixes were applied to make the stack work correctly:
+
+### 1. Connection string format (`docker-compose.yml`)
+The original connection string used a YAML folded scalar (`>`) split across two lines, which injected a stray space into the string. This was replaced with a single quoted line:
+```yaml
+ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+```
+
+### 2. Swagger available in Docker (`docker-compose.yml`)
+Without explicitly setting `ASPNETCORE_ENVIRONMENT`, ASP.NET Core defaults to `Production` inside Docker, which caused Swagger to be skipped. Added to the backend environment:
+```yaml
+ASPNETCORE_ENVIRONMENT: Development
+```
+Swagger UI is now accessible at `http://localhost:8080/swagger` when running via Docker Compose.
+
+### 3. `.env` file
+The `.env` file is not committed to the repository (it is git-ignored). You must create it manually in the project root before running `docker compose up`. See the template above.
+
+---
+
+## Test Data
+
+The database is automatically seeded with test data on first startup. All accounts use the password `Password123!`.
+
+### Users
+
+| Name | Email | Role |
+|------|-------|------|
+| Admin User | `admin@lms.com` | Admin |
+| Jane Instructor | `instructor@lms.com` | Instructor |
+| John Student | `student@lms.com` | Student |
+
+### Courses (taught by Jane Instructor)
+
+| Title | Description |
+|-------|-------------|
+| Introduction to Programming | Learn the basics of programming using C# |
+| Web Development | Build modern web apps with Angular and ASP.NET Core |
+| Database Systems | Fundamentals of relational databases and SQL |
+
+### Assignments (2 per course)
+
+| Title | Course | Deadline |
+|-------|--------|----------|
+| Hello World App | Introduction to Programming | +7 days |
+| OOP Exercise | Introduction to Programming | +14 days |
+| Angular SPA | Web Development | +10 days |
+| REST API Design | Web Development | +3 days |
+| ER Diagram | Database Systems | Past |
+| SQL Query Challenge | Database Systems | +5 days |
+
+### Other seeded data
+- **CourseEnrollments** — John Student enrolled in all 3 courses
+- **Grades** — 3 graded submissions for John Student (88.5, 74.0, 91.0)
+- **Notifications** — 2 unread deadline reminders + 1 read grading notification for John Student
+
+> To reset and re-seed, run `docker compose down -v && docker compose up --build`
 
 ---
 

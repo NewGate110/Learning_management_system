@@ -1,14 +1,15 @@
 import { Component }        from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
-import { CommonModule }     from '@angular/common';
 import { NavbarComponent }  from './components/navbar/navbar.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, NavbarComponent],
+  imports: [RouterOutlet, NavbarComponent],
   template: `
-    <app-navbar *ngIf="router.url !== '/login'" />
+    @if (router.url !== '/login') {
+      <app-navbar />
+    }
     <main class="main-content">
       <router-outlet />
     </main>

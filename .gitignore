@@ -1,22 +1,45 @@
-# ── Secrets ──────────────────────────────────────────────
+# Environment and secrets
 .env
+.env.*
+!.env.example
 
-# ── .NET / ASP.NET Core ──────────────────────────────────
-backend/*/bin/
-backend/*/obj/
+# .NET and ASP.NET Core
+backend/**/bin/
+backend/**/obj/
 backend/**/*.user
+backend/**/*.rsuser
 backend/**/*.suo
-*.nupkg
+backend/**/*.cache
+backend/**/*.nupkg
+backend/**/TestResults/
+backend/.vs/
 .vs/
 
-# ── Node / Angular ───────────────────────────────────────
+# EF/Core tooling artifacts
+*.dbmdl
+*.jfm
+
+# Node and Angular
 frontend/node_modules/
 frontend/dist/
 frontend/.angular/
+frontend/coverage/
+frontend/.sass-cache/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
 
-# ── OS ───────────────────────────────────────────────────
+# Logs
+*.log
+logs/
+
+# OS and editor files
 .DS_Store
 Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
 
-#── claude ───────────────────────────────────────────────────
-.claude
+# Local tooling
+.claude/
