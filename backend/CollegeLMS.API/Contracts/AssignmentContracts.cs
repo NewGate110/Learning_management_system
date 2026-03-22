@@ -7,7 +7,7 @@ public sealed record AssignmentResponse(
     string Title,
     string Description,
     DateTime Deadline,
-    int CourseId,
+    int ModuleId,
     int SubmissionCount);
 
 public sealed record UpsertAssignmentRequest
@@ -20,15 +20,16 @@ public sealed record UpsertAssignmentRequest
     public string Description { get; init; } = string.Empty;
 
     [Range(1, int.MaxValue)]
-    public int CourseId { get; init; }
+    public int ModuleId { get; init; }
 
     public DateTime Deadline { get; init; }
 }
 
 public sealed record SubmitAssignmentRequest
 {
-    [Range(0, 100)]
-    public double? Score { get; init; }
+    [Required]
+    [StringLength(2048, MinimumLength = 3)]
+    public string FileUrl { get; init; } = string.Empty;
 
     public DateTime? SubmittedAt { get; init; }
 }

@@ -58,9 +58,10 @@ public class DeadlineReminderService : BackgroundService
 
         var dueAssignments = await db.Assignments
             .AsNoTracking()
-            .Include(assignment => assignment.Course)
-                .ThenInclude(course => course!.Students)
-            .Include(assignment => assignment.Grades)
+            .Include(assignment => assignment.Module)
+                .ThenInclude(module => module!.Course)
+                    .ThenInclude(course => course!.Students)
+            .Include(assignment => assignment.Submissions)
             .Where(assignment => assignment.Deadline >= now && assignment.Deadline <= cutoff)
             .OrderBy(assignment => assignment.Deadline)
             .ToListAsync(cancellationToken);
@@ -69,14 +70,14 @@ public class DeadlineReminderService : BackgroundService
 
         foreach (var assignment in dueAssignments)
         {
-            var course = assignment.Course;
-            if (course is null)
+            var course = assignment.Module?.Course;
+            if (course is null || assignment.Module is null)
             {
                 continue;
             }
 
-            var submittedStudentIds = assignment.Grades
-                .Select(grade => grade.UserId)
+            var submittedStudentIds = assignment.Submissions
+                .Select(submission => submission.StudentId)
                 .ToHashSet();
 
             foreach (var student in course.Students.Where(student =>
@@ -88,9 +89,11 @@ public class DeadlineReminderService : BackgroundService
 
                 var created = await notificationService.CreateAsync(
                     student.Id,
+                    NotificationTypes.AssignmentDeadline,
                     message,
-                    assignment.Id,
-                    cancellationToken);
+                    assignmentId: assignment.Id,
+                    moduleId: assignment.ModuleId,
+                    cancellationToken: cancellationToken);
 
                 if (!created)
                 {
@@ -108,9 +111,47 @@ public class DeadlineReminderService : BackgroundService
             }
         }
 
+        var dueAssessments = await db.Assessments
+            .AsNoTracking()
+            .Include(assessment => assessment.Module)
+                .ThenInclude(module => module!.Course)
+                    .ThenInclude(course => course!.Students)
+            .Where(assessment => assessment.ScheduledAt >= now && assessment.ScheduledAt <= cutoff)
+            .OrderBy(assessment => assessment.ScheduledAt)
+            .ToListAsync(cancellationToken);
+
+        foreach (var assessment in dueAssessments)
+        {
+            var course = assessment.Module?.Course;
+            if (course is null || assessment.Module is null)
+            {
+                continue;
+            }
+
+            foreach (var student in course.Students.Where(student => student.Role == UserRoles.Student))
+            {
+                var message =
+                    $"Reminder: assessment '{assessment.Title}' for {assessment.Module.Title} is scheduled on {assessment.ScheduledAt:yyyy-MM-dd HH:mm} UTC.";
+
+                var created = await notificationService.CreateAsync(
+                    student.Id,
+                    NotificationTypes.AssessmentDate,
+                    message,
+                    assessmentId: assessment.Id,
+                    moduleId: assessment.ModuleId,
+                    cancellationToken: cancellationToken);
+
+                if (created)
+                {
+                    remindersCreated++;
+                }
+            }
+        }
+
         _logger.LogInformation(
-            "Deadline reminder check completed. {AssignmentCount} assignments were in scope and {ReminderCount} reminders were created.",
+            "Deadline reminder check completed. {AssignmentCount} assignments, {AssessmentCount} assessments in scope, {ReminderCount} reminders created.",
             dueAssignments.Count,
+            dueAssessments.Count,
             remindersCreated);
     }
 

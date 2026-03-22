@@ -8,7 +8,14 @@ public class User
     public string Role { get; set; } = UserRoles.Student;
     public string PasswordHash { get; set; } = string.Empty;
 
-    public ICollection<Grade> Grades { get; set; } = [];
+    public ICollection<Submission> Submissions { get; set; } = [];
+    public ICollection<AssignmentGrade> AssignmentGradesGiven { get; set; } = [];
+    public ICollection<AssessmentGrade> AssessmentGradesGiven { get; set; } = [];
+    public ICollection<AssessmentGrade> AssessmentGradesReceived { get; set; } = [];
+    public ICollection<ModuleProgress> ModuleProgresses { get; set; } = [];
+    public ICollection<AttendanceSession> AttendanceSessionsCreated { get; set; } = [];
+    public ICollection<AttendanceRecord> AttendanceRecords { get; set; } = [];
+    public ICollection<TimetableSlot> TimetableSlotsTeaching { get; set; } = [];
     public ICollection<Notification> Notifications { get; set; } = [];
     public ICollection<Course> EnrolledCourses { get; set; } = [];
     public ICollection<Course> CoursesTeaching { get; set; } = [];

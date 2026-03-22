@@ -93,8 +93,13 @@ public class NotificationController(NotificationService notificationService) : C
         new(
             notification.Id,
             notification.UserId,
+            notification.Type,
             notification.Message,
             notification.IsRead,
             notification.CreatedAt,
-            notification.ReadAt);
+            notification.ReadAt,
+            notification.AssignmentId,
+            notification.AssessmentId,
+            notification.ModuleId,
+            notification.TimetableExceptionId);
 }

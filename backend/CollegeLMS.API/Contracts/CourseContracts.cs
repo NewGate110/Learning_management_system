@@ -9,15 +9,19 @@ public sealed record CourseResponse(
     int InstructorId,
     string InstructorName,
     int StudentCount,
+    int ModuleCount,
     int AssignmentCount);
 
 public sealed record CourseDetailResponse(
     int Id,
     string Title,
     string Description,
+    DateTime? StartDate,
+    DateTime? EndDate,
     int InstructorId,
     string InstructorName,
     IReadOnlyCollection<int> StudentIds,
+    IReadOnlyCollection<ModuleSummaryResponse> Modules,
     IReadOnlyCollection<AssignmentResponse> Assignments);
 
 public sealed record UpsertCourseRequest
@@ -31,6 +35,9 @@ public sealed record UpsertCourseRequest
 
     [Range(1, int.MaxValue)]
     public int InstructorId { get; init; }
+
+    public DateTime? StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
 
     public IReadOnlyCollection<int> StudentIds { get; init; } = [];
 }
