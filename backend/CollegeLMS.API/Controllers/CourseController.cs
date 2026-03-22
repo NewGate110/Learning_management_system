@@ -26,7 +26,8 @@ public class CourseController(AppDbContext db) : ControllerBase
                 course.InstructorId,
                 course.Instructor!.Name,
                 course.Students.Count,
-                course.Assignments.Count))
+                course.Modules.Count,
+                course.Modules.SelectMany(module => module.Assignments).Count()))
             .ToListAsync(cancellationToken);
 
         return Ok(courses);
@@ -42,18 +43,34 @@ public class CourseController(AppDbContext db) : ControllerBase
                 item.Id,
                 item.Title,
                 item.Description,
+                item.StartDate,
+                item.EndDate,
                 item.InstructorId,
                 item.Instructor!.Name,
                 item.Students.OrderBy(student => student.Id).Select(student => student.Id).ToList(),
-                item.Assignments
+                item.Modules
+                    .OrderBy(module => module.Order)
+                    .ThenBy(module => module.Title)
+                    .Select(module => new ModuleSummaryResponse(
+                        module.Id,
+                        module.CourseId,
+                        module.Title,
+                        module.Description,
+                        module.Type,
+                        module.Order,
+                        module.Assignments.Count,
+                        module.Assessments.Count))
+                    .ToList(),
+                item.Modules
+                    .SelectMany(module => module.Assignments)
                     .OrderBy(assignment => assignment.Deadline)
                     .Select(assignment => new AssignmentResponse(
                         assignment.Id,
                         assignment.Title,
                         assignment.Description,
                         assignment.Deadline,
-                        assignment.CourseId,
-                        assignment.Grades.Count))
+                        assignment.ModuleId,
+                        assignment.Submissions.Count))
                     .ToList()))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -74,6 +91,11 @@ public class CourseController(AppDbContext db) : ControllerBase
             return Forbid();
         }
 
+        if (request.StartDate.HasValue && request.EndDate.HasValue && request.EndDate < request.StartDate)
+        {
+            return BadRequest(new { message = "EndDate must be on or after StartDate." });
+        }
+
         var instructor = await db.Users
             .FirstOrDefaultAsync(user => user.Id == request.InstructorId, cancellationToken);
 
@@ -92,7 +114,9 @@ public class CourseController(AppDbContext db) : ControllerBase
         {
             Title = request.Title.Trim(),
             Description = request.Description.Trim(),
-            InstructorId = instructor.Id
+            InstructorId = instructor.Id,
+            StartDate = request.StartDate?.ToUniversalTime(),
+            EndDate = request.EndDate?.ToUniversalTime()
         };
 
         foreach (var student in students)
@@ -105,7 +129,7 @@ public class CourseController(AppDbContext db) : ControllerBase
 
         await db.Entry(course).Reference(item => item.Instructor).LoadAsync(cancellationToken);
         await db.Entry(course).Collection(item => item.Students).LoadAsync(cancellationToken);
-        await db.Entry(course).Collection(item => item.Assignments).LoadAsync(cancellationToken);
+        await db.Entry(course).Collection(item => item.Modules).LoadAsync(cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = course.Id }, ToDetailResponse(course));
     }
@@ -120,8 +144,10 @@ public class CourseController(AppDbContext db) : ControllerBase
         var course = await db.Courses
             .Include(item => item.Instructor)
             .Include(item => item.Students)
-            .Include(item => item.Assignments)
-                .ThenInclude(assignment => assignment.Grades)
+            .Include(item => item.Modules)
+                .ThenInclude(module => module.Assignments)
+            .Include(item => item.Modules)
+                .ThenInclude(module => module.Assessments)
             .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
 
         if (course is null)
@@ -135,6 +161,11 @@ public class CourseController(AppDbContext db) : ControllerBase
         if (!isAdmin && course.InstructorId != actorId)
         {
             return Forbid();
+        }
+
+        if (request.StartDate.HasValue && request.EndDate.HasValue && request.EndDate < request.StartDate)
+        {
+            return BadRequest(new { message = "EndDate must be on or after StartDate." });
         }
 
         if (request.InstructorId != course.InstructorId)
@@ -165,6 +196,8 @@ public class CourseController(AppDbContext db) : ControllerBase
 
         course.Title = request.Title.Trim();
         course.Description = request.Description.Trim();
+        course.StartDate = request.StartDate?.ToUniversalTime();
+        course.EndDate = request.EndDate?.ToUniversalTime();
         course.Students.Clear();
         foreach (var student in students)
         {
@@ -213,17 +246,33 @@ public class CourseController(AppDbContext db) : ControllerBase
             course.Id,
             course.Title,
             course.Description,
+            course.StartDate,
+            course.EndDate,
             course.InstructorId,
             course.Instructor?.Name ?? string.Empty,
             course.Students.OrderBy(student => student.Id).Select(student => student.Id).ToList(),
-            course.Assignments
+            course.Modules
+                .OrderBy(module => module.Order)
+                .ThenBy(module => module.Title)
+                .Select(module => new ModuleSummaryResponse(
+                    module.Id,
+                    module.CourseId,
+                    module.Title,
+                    module.Description,
+                    module.Type,
+                    module.Order,
+                    module.Assignments.Count,
+                    module.Assessments.Count))
+                .ToList(),
+            course.Modules
+                .SelectMany(module => module.Assignments)
                 .OrderBy(assignment => assignment.Deadline)
                 .Select(assignment => new AssignmentResponse(
                     assignment.Id,
                     assignment.Title,
                     assignment.Description,
                     assignment.Deadline,
-                    assignment.CourseId,
-                    assignment.Grades.Count))
+                    assignment.ModuleId,
+                    assignment.Submissions.Count))
                 .ToList());
 }

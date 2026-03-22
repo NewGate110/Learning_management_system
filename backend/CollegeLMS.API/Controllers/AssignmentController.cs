@@ -2,6 +2,7 @@ using CollegeLMS.API.Contracts;
 using CollegeLMS.API.Data;
 using CollegeLMS.API.Extensions;
 using CollegeLMS.API.Models;
+using CollegeLMS.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,29 +12,31 @@ namespace CollegeLMS.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class AssignmentController(AppDbContext db) : ControllerBase
+public class AssignmentController(
+    AppDbContext db,
+    AttendanceService attendanceService) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AssignmentResponse>>> GetByCourse(
-        [FromQuery] int courseId,
+    public async Task<ActionResult<IEnumerable<AssignmentResponse>>> GetByModule(
+        [FromQuery] int moduleId,
         CancellationToken cancellationToken)
     {
-        if (courseId <= 0)
+        if (moduleId <= 0)
         {
-            return BadRequest(new { message = "courseId must be greater than zero." });
+            return BadRequest(new { message = "moduleId must be greater than zero." });
         }
 
         var assignments = await db.Assignments
             .AsNoTracking()
-            .Where(assignment => assignment.CourseId == courseId)
+            .Where(assignment => assignment.ModuleId == moduleId)
             .OrderBy(assignment => assignment.Deadline)
             .Select(assignment => new AssignmentResponse(
                 assignment.Id,
                 assignment.Title,
                 assignment.Description,
                 assignment.Deadline,
-                assignment.CourseId,
-                assignment.Grades.Count))
+                assignment.ModuleId,
+                assignment.Submissions.Count))
             .ToListAsync(cancellationToken);
 
         return Ok(assignments);
@@ -50,8 +53,8 @@ public class AssignmentController(AppDbContext db) : ControllerBase
                 item.Title,
                 item.Description,
                 item.Deadline,
-                item.CourseId,
-                item.Grades.Count))
+                item.ModuleId,
+                item.Submissions.Count))
             .FirstOrDefaultAsync(cancellationToken);
 
         return assignment is null ? NotFound() : Ok(assignment);
@@ -68,17 +71,19 @@ public class AssignmentController(AppDbContext db) : ControllerBase
             return BadRequest(new { message = "Deadline is required." });
         }
 
-        var course = await db.Courses
-            .FirstOrDefaultAsync(item => item.Id == request.CourseId, cancellationToken);
+        var module = await db.Modules
+            .AsNoTracking()
+            .Include(item => item.Course)
+            .FirstOrDefaultAsync(item => item.Id == request.ModuleId, cancellationToken);
 
-        if (course is null)
+        if (module is null || module.Course is null)
         {
-            return BadRequest(new { message = "CourseId does not reference an existing course." });
+            return BadRequest(new { message = "ModuleId does not reference an existing module." });
         }
 
         var actorId = User.GetUserId();
         var isAdmin = User.IsInRole(UserRoles.Admin);
-        if (!isAdmin && course.InstructorId != actorId)
+        if (!isAdmin && module.Course.InstructorId != actorId)
         {
             return Forbid();
         }
@@ -88,7 +93,7 @@ public class AssignmentController(AppDbContext db) : ControllerBase
             Title = request.Title.Trim(),
             Description = request.Description.Trim(),
             Deadline = request.Deadline.ToUniversalTime(),
-            CourseId = course.Id
+            ModuleId = module.Id
         };
 
         db.Assignments.Add(assignment);
@@ -110,8 +115,9 @@ public class AssignmentController(AppDbContext db) : ControllerBase
         }
 
         var assignment = await db.Assignments
-            .Include(item => item.Course)
-            .Include(item => item.Grades)
+            .Include(item => item.Module)
+                .ThenInclude(module => module!.Course)
+            .Include(item => item.Submissions)
             .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
 
         if (assignment is null)
@@ -121,29 +127,29 @@ public class AssignmentController(AppDbContext db) : ControllerBase
 
         var actorId = User.GetUserId();
         var isAdmin = User.IsInRole(UserRoles.Admin);
-        if (!isAdmin && assignment.Course?.InstructorId != actorId)
+        if (!isAdmin && assignment.Module?.Course?.InstructorId != actorId)
         {
             return Forbid();
         }
 
-        if (request.CourseId != assignment.CourseId)
+        if (request.ModuleId != assignment.ModuleId)
         {
-            var targetCourse = await db.Courses.FirstOrDefaultAsync(
-                course => course.Id == request.CourseId,
-                cancellationToken);
+            var targetModule = await db.Modules
+                .AsNoTracking()
+                .Include(module => module.Course)
+                .FirstOrDefaultAsync(module => module.Id == request.ModuleId, cancellationToken);
 
-            if (targetCourse is null)
+            if (targetModule is null || targetModule.Course is null)
             {
-                return BadRequest(new { message = "CourseId does not reference an existing course." });
+                return BadRequest(new { message = "ModuleId does not reference an existing module." });
             }
 
-            if (!isAdmin && targetCourse.InstructorId != actorId)
+            if (!isAdmin && targetModule.Course.InstructorId != actorId)
             {
                 return Forbid();
             }
 
-            assignment.CourseId = targetCourse.Id;
-            assignment.Course = targetCourse;
+            assignment.ModuleId = targetModule.Id;
         }
 
         assignment.Title = request.Title.Trim();
@@ -160,7 +166,8 @@ public class AssignmentController(AppDbContext db) : ControllerBase
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var assignment = await db.Assignments
-            .Include(item => item.Course)
+            .Include(item => item.Module)
+                .ThenInclude(module => module!.Course)
             .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
 
         if (assignment is null)
@@ -170,7 +177,7 @@ public class AssignmentController(AppDbContext db) : ControllerBase
 
         var actorId = User.GetUserId();
         var isAdmin = User.IsInRole(UserRoles.Admin);
-        if (!isAdmin && assignment.Course?.InstructorId != actorId)
+        if (!isAdmin && assignment.Module?.Course?.InstructorId != actorId)
         {
             return Forbid();
         }
@@ -195,44 +202,56 @@ public class AssignmentController(AppDbContext db) : ControllerBase
         }
 
         var assignment = await db.Assignments
-            .Include(item => item.Course)
-                .ThenInclude(course => course!.Students)
-            .Include(item => item.Grades)
+            .Include(item => item.Module)
+                .ThenInclude(module => module!.Course)
+                    .ThenInclude(course => course!.Students)
+            .Include(item => item.Submissions)
             .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
 
-        if (assignment is null)
+        if (assignment is null || assignment.Module?.Course is null)
         {
             return NotFound();
         }
 
-        if (assignment.Course is null || assignment.Course.Students.All(student => student.Id != userId.Value))
+        var isEnrolled = assignment.Module.Course.Students.Any(student => student.Id == userId.Value);
+        if (!isEnrolled)
         {
             return Forbid();
         }
 
-        var submittedAt = request.SubmittedAt?.ToUniversalTime() ?? DateTime.UtcNow;
-        var grade = assignment.Grades.FirstOrDefault(item => item.UserId == userId.Value);
+        var attendance = await attendanceService.GetAttendanceSummaryAsync(
+            assignment.ModuleId,
+            userId.Value,
+            cancellationToken);
 
-        if (grade is null)
+        if (attendance.Percentage < 80)
         {
-            grade = new Grade
+            return StatusCode(StatusCodes.Status403Forbidden, new
             {
-                UserId = userId.Value,
+                message = "Assignment submission is locked because attendance is below 80% for this module.",
+                attendancePercentage = attendance.Percentage
+            });
+        }
+
+        var submittedAt = request.SubmittedAt?.ToUniversalTime() ?? DateTime.UtcNow;
+        var submission = assignment.Submissions.FirstOrDefault(item => item.StudentId == userId.Value);
+
+        if (submission is null)
+        {
+            submission = new Submission
+            {
                 AssignmentId = assignment.Id,
-                Score = request.Score ?? 0,
+                StudentId = userId.Value,
+                FileUrl = request.FileUrl.Trim(),
                 SubmittedAt = submittedAt
             };
 
-            db.Grades.Add(grade);
+            db.Submissions.Add(submission);
         }
         else
         {
-            if (request.Score.HasValue)
-            {
-                grade.Score = request.Score.Value;
-            }
-
-            grade.SubmittedAt = submittedAt;
+            submission.FileUrl = request.FileUrl.Trim();
+            submission.SubmittedAt = submittedAt;
         }
 
         await db.SaveChangesAsync(cancellationToken);
@@ -240,10 +259,13 @@ public class AssignmentController(AppDbContext db) : ControllerBase
         return Ok(new
         {
             assignmentId = assignment.Id,
-            userId = userId.Value,
-            score = grade.Score,
-            submittedAt = grade.SubmittedAt,
-            status = grade.SubmittedAt <= assignment.Deadline ? "OnTime" : "Late"
+            moduleId = assignment.ModuleId,
+            studentId = userId.Value,
+            submissionId = submission.Id,
+            fileUrl = submission.FileUrl,
+            submittedAt = submission.SubmittedAt,
+            status = submission.SubmittedAt <= assignment.Deadline ? "OnTime" : "Late",
+            attendancePercentage = attendance.Percentage
         });
     }
 
@@ -253,6 +275,6 @@ public class AssignmentController(AppDbContext db) : ControllerBase
             assignment.Title,
             assignment.Description,
             assignment.Deadline,
-            assignment.CourseId,
-            assignment.Grades.Count);
+            assignment.ModuleId,
+            assignment.Submissions.Count);
 }

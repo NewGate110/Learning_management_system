@@ -25,14 +25,14 @@ public class ProgressService(AppDbContext db)
         int userId,
         CancellationToken cancellationToken = default)
     {
-        var points = await db.Grades
+        var points = await db.AssignmentGrades
             .AsNoTracking()
-            .Where(grade => grade.UserId == userId)
-            .OrderBy(grade => grade.SubmittedAt)
+            .Where(grade => grade.Submission!.StudentId == userId)
+            .OrderBy(grade => grade.GradedAt)
             .Select(grade => new GradeTrendPoint(
-                grade.Assignment!.Title,
+                grade.Submission!.Assignment!.Title,
                 Math.Round(grade.Score, 2),
-                grade.SubmittedAt))
+                grade.GradedAt))
             .ToListAsync(cancellationToken);
 
         var averageScore = points.Count == 0
@@ -54,13 +54,15 @@ public class ProgressService(AppDbContext db)
             {
                 course.Id,
                 course.Title,
-                TotalAssignments = course.Assignments.Count(),
-                SubmittedAssignments = course.Assignments.Count(
-                    assignment => assignment.Grades.Any(grade => grade.UserId == userId)),
-                AverageScore = course.Assignments
-                    .SelectMany(assignment => assignment.Grades
-                        .Where(grade => grade.UserId == userId)
-                        .Select(grade => (double?)grade.Score))
+                TotalAssignments = course.Modules.SelectMany(module => module.Assignments).Count(),
+                SubmittedAssignments = course.Modules
+                    .SelectMany(module => module.Assignments)
+                    .Count(assignment => assignment.Submissions.Any(submission => submission.StudentId == userId)),
+                AverageScore = course.Modules
+                    .SelectMany(module => module.Assignments)
+                    .SelectMany(assignment => assignment.Submissions
+                        .Where(submission => submission.StudentId == userId && submission.AssignmentGrade != null)
+                        .Select(submission => (double?)submission.AssignmentGrade!.Score))
                     .Average() ?? 0
             })
             .ToListAsync(cancellationToken);
@@ -89,18 +91,19 @@ public class ProgressService(AppDbContext db)
         var totalAssignments = await db.Assignments
             .AsNoTracking()
             .CountAsync(
-                assignment => assignment.Course!.Students.Any(student => student.Id == userId),
+                assignment =>
+                    assignment.Module!.Course!.Students.Any(student => student.Id == userId),
                 cancellationToken);
 
-        var submissions = await db.Grades
+        var submissions = await db.Submissions
             .AsNoTracking()
-            .Where(grade =>
-                grade.UserId == userId &&
-                grade.Assignment!.Course!.Students.Any(student => student.Id == userId))
-            .Select(grade => new
+            .Where(submission =>
+                submission.StudentId == userId &&
+                submission.Assignment!.Module!.Course!.Students.Any(student => student.Id == userId))
+            .Select(submission => new
             {
-                grade.SubmittedAt,
-                grade.Assignment!.Deadline
+                submission.SubmittedAt,
+                submission.Assignment!.Deadline
             })
             .ToListAsync(cancellationToken);
 
@@ -131,17 +134,17 @@ public class ProgressService(AppDbContext db)
         var deadlines = await db.Assignments
             .AsNoTracking()
             .Where(assignment =>
-                assignment.Course!.Students.Any(student => student.Id == userId) &&
+                assignment.Module!.Course!.Students.Any(student => student.Id == userId) &&
                 assignment.Deadline >= now &&
                 assignment.Deadline <= cutoff &&
-                !assignment.Grades.Any(grade => grade.UserId == userId))
+                !assignment.Submissions.Any(submission => submission.StudentId == userId))
             .OrderBy(assignment => assignment.Deadline)
             .Select(assignment => new
             {
                 assignment.Id,
                 assignment.Title,
-                assignment.CourseId,
-                CourseTitle = assignment.Course!.Title,
+                CourseId = assignment.Module!.CourseId,
+                CourseTitle = assignment.Module!.Course!.Title,
                 assignment.Deadline
             })
             .ToListAsync(cancellationToken);

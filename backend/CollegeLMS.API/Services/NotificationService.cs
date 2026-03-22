@@ -14,43 +14,6 @@ public class NotificationService(AppDbContext db)
             .AsNoTracking()
             .FirstOrDefaultAsync(notification => notification.Id == notificationId, cancellationToken);
 
-    public async Task<bool> CreateAsync(
-        int userId,
-        string message,
-        int? assignmentId = null,
-        CancellationToken cancellationToken = default)
-    {
-        var duplicateExists = assignmentId.HasValue
-            ? await db.Notifications.AnyAsync(
-                notification =>
-                    notification.UserId == userId &&
-                    notification.AssignmentId == assignmentId,
-                cancellationToken)
-            : await db.Notifications.AnyAsync(
-                notification =>
-                    notification.UserId == userId &&
-                    notification.Message == message &&
-                    !notification.IsRead,
-                cancellationToken);
-
-        if (duplicateExists)
-        {
-            return false;
-        }
-
-        db.Notifications.Add(new Notification
-        {
-            UserId = userId,
-            AssignmentId = assignmentId,
-            Message = message,
-            IsRead = false,
-            CreatedAt = DateTime.UtcNow
-        });
-
-        await db.SaveChangesAsync(cancellationToken);
-        return true;
-    }
-
     public Task<List<Notification>> GetByUserAsync(int userId, CancellationToken cancellationToken = default) =>
         db.Notifications
             .AsNoTracking()
@@ -64,6 +27,108 @@ public class NotificationService(AppDbContext db)
             .CountAsync(
                 notification => notification.UserId == userId && !notification.IsRead,
                 cancellationToken);
+
+    public async Task<bool> CreateAsync(
+        int userId,
+        string message,
+        int? assignmentId = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await CreateAsync(
+            userId,
+            NotificationTypes.General,
+            message,
+            assignmentId,
+            null,
+            null,
+            null,
+            cancellationToken);
+    }
+
+    public async Task<bool> CreateAsync(
+        int userId,
+        string type,
+        string message,
+        int? assignmentId = null,
+        int? assessmentId = null,
+        int? moduleId = null,
+        int? timetableExceptionId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedType = string.IsNullOrWhiteSpace(type) ? NotificationTypes.General : type.Trim();
+        if (!NotificationTypes.IsValid(normalizedType))
+        {
+            normalizedType = NotificationTypes.General;
+        }
+
+        var normalizedMessage = message.Trim();
+        var duplicateExists = await db.Notifications.AnyAsync(
+            notification =>
+                notification.UserId == userId &&
+                !notification.IsRead &&
+                notification.Type == normalizedType &&
+                notification.AssignmentId == assignmentId &&
+                notification.AssessmentId == assessmentId &&
+                notification.ModuleId == moduleId &&
+                notification.TimetableExceptionId == timetableExceptionId &&
+                notification.Message == normalizedMessage,
+            cancellationToken);
+
+        if (duplicateExists)
+        {
+            return false;
+        }
+
+        db.Notifications.Add(new Notification
+        {
+            UserId = userId,
+            Type = normalizedType,
+            Message = normalizedMessage,
+            AssignmentId = assignmentId,
+            AssessmentId = assessmentId,
+            ModuleId = moduleId,
+            TimetableExceptionId = timetableExceptionId,
+            IsRead = false,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<int> CreateBulkAsync(
+        IEnumerable<int> userIds,
+        string type,
+        string message,
+        int? assignmentId = null,
+        int? assessmentId = null,
+        int? moduleId = null,
+        int? timetableExceptionId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var distinctUserIds = userIds.Distinct().ToList();
+        var created = 0;
+
+        foreach (var userId in distinctUserIds)
+        {
+            var createdForUser = await CreateAsync(
+                userId,
+                type,
+                message,
+                assignmentId,
+                assessmentId,
+                moduleId,
+                timetableExceptionId,
+                cancellationToken);
+
+            if (createdForUser)
+            {
+                created++;
+            }
+        }
+
+        return created;
+    }
 
     public async Task<bool> MarkAsReadAsync(
         int notificationId,
