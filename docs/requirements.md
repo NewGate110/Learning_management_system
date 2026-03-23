@@ -1,9 +1,9 @@
 # System Overview
 The system is an enhanced Moodle-style Learning Management System (LMS) developed to improve usability, performance, and overall user experience. It includes core LMS functionalities such as user authentication, course management, assignment handling, and grading, while also introducing additional features to better support academic workflows.
 
-The system is built using ASP.NET Core for the backend, Angular for the frontend, and PostgreSQL as the database. The backend is responsible for handling data processing and exposing API endpoints, while the frontend interacts with these APIs to provide a responsive and interactive interface.
+The system follows a client–server architecture, where the backend is built using ASP.NET Core and handles business logic, data processing, and API endpoints. The frontend is developed using Angular and interacts with these APIs to provide a responsive and interactive user interface. PostgreSQL is used as the database to manage and store system data.
 
-To extend the capabilities of a traditional LMS, the system introduces a modular structure where courses are divided into modules. It also includes attendance tracking, role-based dashboards for Students, Instructors, and Admin users, timetable management, and a notification system. These features aim to improve organisation, monitoring, and overall user experience.
+To extend the capabilities of a traditional LMS, the system introduces a modular structure where courses are divided into modules. It also includes attendance tracking, role-based dashboards for Students, Instructors, and Admin users, timetable management, and a notification system. These features improve organisation, monitoring of academic progress, and overall system efficiency.
 
 ---
 
@@ -39,7 +39,10 @@ The system is designed to meet the following quality requirements:
 
 ---
 
-# SDLC Methodology
-Agile methodology is used for the development of this system. It allows the team to work in iterative stages, making it easier to develop, test, and refine features throughout the project.
+## SDLC Methodology
 
-This approach supports parallel development of different system components, including backend services, frontend features, and system design. GitHub is used for version control, enabling efficient collaboration and tracking of changes. Continuous integration ensures that all components remain aligned with the overall system design.
+The project follows an Agile approach, where development is carried out in stages rather than all at once. This allows features to be built, tested, and improved gradually throughout the development process.
+
+This approach works well for the system, as different components such as the backend, frontend, and system design are being developed in parallel. It helps the team stay organised and makes it easier to manage progress across different parts of the project.
+
+GitHub is used for version control, allowing changes to be tracked and combined efficiently. It also supports collaboration between team members. Regular updates and testing help ensure that all components remain consistent as the system develops.
