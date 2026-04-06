@@ -1,27 +1,11 @@
-import { Component }        from '@angular/core';
-import { RouterOutlet, Router } from '@angular/router';
-import { NavbarComponent }  from './components/navbar/navbar.component';
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { ToastContainerComponent } from './shared/components/toast-container.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, NavbarComponent],
-  template: `
-    @if (router.url !== '/login') {
-      <app-navbar />
-    }
-    <main class="main-content">
-      <router-outlet />
-    </main>
-  `,
-  styles: [`
-    .main-content {
-      padding: 24px;
-      max-width: 1280px;
-      margin: 0 auto;
-    }
-  `],
+  imports: [RouterOutlet, ToastContainerComponent],
+  template: `<router-outlet/><app-toast-container/>`
 })
-export class AppComponent {
-  constructor(public router: Router) {}
-}
+export class AppComponent {}

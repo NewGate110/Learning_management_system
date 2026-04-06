@@ -1,50 +1,26 @@
-import { Routes }   from '@angular/router';
-import { AuthGuard } from './guards/auth.guard';
+import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
-  // Public
-  {
-    path: 'login',
-    loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent),
-  },
-
-  // Protected routes — require AuthGuard
+  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
+  { path: 'login',    loadComponent: () => import('./features/auth/login.component').then(m => m.LoginComponent) },
+  { path: 'register', redirectTo: '/login', pathMatch: 'full' },
   {
     path: '',
-    canActivate: [AuthGuard],
+    loadComponent: () => import('./shared/components/shell.component').then(m => m.ShellComponent),
+    canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      {
-        path: 'dashboard',
-        loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
-      },
-      {
-        path: 'courses',
-        loadComponent: () => import('./pages/courses/courses.component').then(m => m.CoursesComponent),
-      },
-      {
-        path: 'courses/:id',
-        loadComponent: () => import('./pages/course-detail/course-detail.component').then(m => m.CourseDetailComponent),
-      },
-      {
-        path: 'assignments',
-        loadComponent: () => import('./pages/assignments/assignments.component').then(m => m.AssignmentsComponent),
-      },
-      {
-        path: 'quiz',
-        loadComponent: () => import('./pages/quiz/quiz.component').then(m => m.QuizComponent),
-      },
-      {
-        path: 'progress',  // ★ Innovation — Student Progress Dashboard
-        loadComponent: () => import('./pages/progress-dashboard/progress-dashboard.component').then(m => m.ProgressDashboardComponent),
-      },
-      {
-        path: 'admin',
-        loadComponent: () => import('./pages/admin-panel/admin-panel.component').then(m => m.AdminPanelComponent),
-      },
-    ],
+      { path: 'dashboard',     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent) },
+      { path: 'courses',       loadComponent: () => import('./features/courses/courses.component').then(m => m.CoursesComponent) },
+      { path: 'courses/:id',   loadComponent: () => import('./features/courses/course-detail.component').then(m => m.CourseDetailComponent) },
+      { path: 'assignments',   loadComponent: () => import('./features/assignments/assignments.component').then(m => m.AssignmentsComponent) },
+      { path: 'grades',        loadComponent: () => import('./features/grades/grades.component').then(m => m.GradesComponent) },
+      { path: 'attendance',    loadComponent: () => import('./features/attendance/attendance.component').then(m => m.AttendanceComponent) },
+      { path: 'timetable',     loadComponent: () => import('./features/timetable/timetable.component').then(m => m.TimetableComponent) },
+      { path: 'notifications', loadComponent: () => import('./features/notifications/notifications.component').then(m => m.NotificationsComponent) },
+      { path: 'progress',      loadComponent: () => import('./features/progress/progress.component').then(m => m.ProgressComponent) },
+      { path: 'users',         loadComponent: () => import('./features/users/users.component').then(m => m.UsersComponent) },
+    ]
   },
-
-  // Fallback
-  { path: '**', redirectTo: 'login' },
+  { path: '**', redirectTo: '/dashboard' }
 ];
