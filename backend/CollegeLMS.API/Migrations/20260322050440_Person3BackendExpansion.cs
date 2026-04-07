@@ -287,6 +287,12 @@ namespace CollegeLMS.API.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateIndex(
+                name: "IX_Submissions_AssignmentId_StudentId",
+                table: "Submissions",
+                columns: new[] { "AssignmentId", "StudentId" },
+                unique: true);
+
             migrationBuilder.Sql(
                 """
                 INSERT INTO "Submissions" ("AssignmentId", "StudentId", "FileUrl", "SubmittedAt")
@@ -298,6 +304,12 @@ namespace CollegeLMS.API.Migrations
                 FROM "Grades" g
                 ON CONFLICT ("AssignmentId", "StudentId") DO NOTHING;
                 """);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssignmentGrades_SubmissionId",
+                table: "AssignmentGrades",
+                column: "SubmissionId",
+                unique: true);
 
             migrationBuilder.Sql(
                 """
@@ -478,12 +490,6 @@ namespace CollegeLMS.API.Migrations
                 columns: new[] { "InstructorId", "GradedAt" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_AssignmentGrades_SubmissionId",
-                table: "AssignmentGrades",
-                column: "SubmissionId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_AttendanceRecords_AttendanceSessionId_StudentId",
                 table: "AttendanceRecords",
                 columns: new[] { "AttendanceSessionId", "StudentId" },
@@ -525,12 +531,6 @@ namespace CollegeLMS.API.Migrations
                 name: "IX_Modules_CourseId_Order",
                 table: "Modules",
                 columns: new[] { "CourseId", "Order" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Submissions_AssignmentId_StudentId",
-                table: "Submissions",
-                columns: new[] { "AssignmentId", "StudentId" },
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Submissions_StudentId",
