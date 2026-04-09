@@ -60,6 +60,53 @@ public class AssignmentController(
         return assignment is null ? NotFound() : Ok(assignment);
     }
 
+    [HttpGet("pending-submissions")]
+    [Authorize(Roles = $"{UserRoles.Instructor},{UserRoles.Admin}")]
+    public async Task<ActionResult<IEnumerable<PendingSubmissionResponse>>> GetPendingSubmissions(
+        [FromQuery] int? courseId,
+        CancellationToken cancellationToken)
+    {
+        var actorId = User.GetUserId();
+        if (actorId is null)
+        {
+            return Unauthorized();
+        }
+
+        var query = db.Submissions
+            .AsNoTracking()
+            .Where(submission => submission.AssignmentGrade == null);
+
+        if (!User.IsInRole(UserRoles.Admin))
+        {
+            query = query.Where(submission =>
+                submission.Assignment!.Module!.Course!.InstructorId == actorId.Value);
+        }
+
+        if (courseId.HasValue && courseId.Value > 0)
+        {
+            query = query.Where(submission => submission.Assignment!.Module!.CourseId == courseId.Value);
+        }
+
+        var submissions = await query
+            .OrderBy(submission => submission.SubmittedAt)
+            .Select(submission => new PendingSubmissionResponse(
+                submission.Id,
+                submission.AssignmentId,
+                submission.Assignment!.Title,
+                submission.Assignment.ModuleId,
+                submission.Assignment.Module!.Title,
+                submission.Assignment.Module.CourseId,
+                submission.Assignment.Module.Course!.Title,
+                submission.StudentId,
+                submission.Student!.Name,
+                submission.FileUrl,
+                submission.SubmittedAt,
+                submission.Assignment.Deadline))
+            .ToListAsync(cancellationToken);
+
+        return Ok(submissions);
+    }
+
     [HttpPost]
     [Authorize(Roles = $"{UserRoles.Instructor},{UserRoles.Admin}")]
     public async Task<ActionResult<AssignmentResponse>> Create(
@@ -267,6 +314,66 @@ public class AssignmentController(
             status = submission.SubmittedAt <= assignment.Deadline ? "OnTime" : "Late",
             attendancePercentage = attendance.Percentage
         });
+    }
+
+    [HttpGet("{id:int}/my-submission")]
+    [Authorize(Roles = UserRoles.Student)]
+    public async Task<ActionResult<MyAssignmentSubmissionResponse>> GetMySubmission(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var assignment = await db.Assignments
+            .Include(item => item.Module)
+                .ThenInclude(module => module!.Course)
+                    .ThenInclude(course => course!.Students)
+            .Include(item => item.Submissions.Where(submission => submission.StudentId == userId.Value))
+                .ThenInclude(submission => submission.AssignmentGrade)
+            .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+
+        if (assignment is null || assignment.Module?.Course is null)
+        {
+            return NotFound();
+        }
+
+        var isEnrolled = assignment.Module.Course.Students.Any(student => student.Id == userId.Value);
+        if (!isEnrolled)
+        {
+            return Forbid();
+        }
+
+        var submission = assignment.Submissions.FirstOrDefault(submitted => submitted.StudentId == userId.Value);
+        if (submission is null)
+        {
+            return Ok(new MyAssignmentSubmissionResponse(
+                assignment.Id,
+                userId.Value,
+                null,
+                null,
+                null,
+                "NotSubmitted",
+                null,
+                null,
+                null,
+                null));
+        }
+
+        return Ok(new MyAssignmentSubmissionResponse(
+            assignment.Id,
+            userId.Value,
+            submission.Id,
+            submission.FileUrl,
+            submission.SubmittedAt,
+            submission.AssignmentGrade is null ? "Submitted" : "Graded",
+            submission.AssignmentGrade?.Id,
+            submission.AssignmentGrade?.Score,
+            submission.AssignmentGrade?.Feedback,
+            submission.AssignmentGrade?.GradedAt));
     }
 
     private static AssignmentResponse ToResponse(Assignment assignment) =>

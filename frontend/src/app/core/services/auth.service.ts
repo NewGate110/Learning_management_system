@@ -31,9 +31,7 @@ export class AuthService {
   }
 
   register(req: RegisterRequest) {
-    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/register`, req).pipe(
-      tap(res => this.persist(res))
-    );
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/register`, req);
   }
 
   logout() {

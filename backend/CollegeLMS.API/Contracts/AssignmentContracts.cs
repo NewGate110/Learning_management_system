@@ -33,3 +33,29 @@ public sealed record SubmitAssignmentRequest
 
     public DateTime? SubmittedAt { get; init; }
 }
+
+public sealed record PendingSubmissionResponse(
+    int Id,
+    int AssignmentId,
+    string AssignmentTitle,
+    int ModuleId,
+    string ModuleTitle,
+    int CourseId,
+    string CourseTitle,
+    int StudentId,
+    string StudentName,
+    string FileUrl,
+    DateTime SubmittedAt,
+    DateTime Deadline);
+
+public sealed record MyAssignmentSubmissionResponse(
+    int AssignmentId,
+    int StudentId,
+    int? SubmissionId,
+    string? FileUrl,
+    DateTime? SubmittedAt,
+    string Status,
+    int? AssignmentGradeId,
+    double? Score,
+    string? Feedback,
+    DateTime? GradedAt);

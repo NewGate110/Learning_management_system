@@ -7,6 +7,7 @@ public class ModuleProgress
     public int ModuleId { get; set; }
     public string Status { get; set; } = ModuleProgressStatuses.InProgress;
     public double? FinalGrade { get; set; }
+    public bool IsReleased { get; set; }
 
     public User? Student { get; set; }
     public Module? Module { get; set; }

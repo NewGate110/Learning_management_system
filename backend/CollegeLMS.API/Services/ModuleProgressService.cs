@@ -86,6 +86,7 @@ public class ModuleProgressService(AppDbContext db)
 
         moduleProgress.Status = status;
         moduleProgress.FinalGrade = finalGrade;
+        moduleProgress.IsReleased = finalGrade is not null && moduleProgress.IsReleased;
 
         await db.SaveChangesAsync(cancellationToken);
         return moduleProgress;

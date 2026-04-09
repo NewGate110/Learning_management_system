@@ -33,14 +33,39 @@ export interface AssignmentResponse {
   id: number; title: string; description: string;
   deadline: string; moduleId: number; submissionCount: number;
 }
+export interface PendingSubmissionResponse {
+  id: number; assignmentId: number; assignmentTitle: string;
+  moduleId: number; moduleTitle: string; courseId: number; courseTitle: string;
+  studentId: number; studentName: string; fileUrl: string;
+  submittedAt: string; deadline: string;
+}
+export interface MyAssignmentSubmissionResponse {
+  assignmentId: number; studentId: number; submissionId?: number;
+  fileUrl?: string; submittedAt?: string; status: string;
+  assignmentGradeId?: number; score?: number; feedback?: string; gradedAt?: string;
+}
+
+// Assessments
+export interface AssessmentResponse {
+  id: number; moduleId: number; moduleTitle: string;
+  title: string; description: string; scheduledAt: string;
+  duration: number; location: string;
+}
 
 // Grades
 export interface AssignmentGradeResponse {
   id: number; submissionId: number; assignmentId: number; moduleId: number;
   studentId: number; instructorId: number; score: number; feedback: string; gradedAt: string;
 }
+export interface AssessmentGradeResponse {
+  id: number; assessmentId: number; moduleId: number;
+  studentId: number; instructorId: number; score: number; gradedAt: string;
+}
 export interface ModuleFinalGradeResponse {
   moduleId: number; studentId: number; status: string; finalGrade?: number; isReleased: boolean;
+}
+export interface ModuleGradeReleaseResponse {
+  moduleId: number; releasedStudentCount: number; alreadyReleasedStudentCount: number;
 }
 
 // Attendance
@@ -77,6 +102,14 @@ export interface NotificationResponse {
   id: number; userId: number; type: string; message: string;
   isRead: boolean; createdAt: string; readAt?: string;
   assignmentId?: number; assessmentId?: number; moduleId?: number; timetableExceptionId?: number;
+}
+
+// Calendar
+export interface CalendarEventResponse {
+  type: string; title: string; start: string; end?: string;
+  location?: string; description?: string;
+  courseId?: number; moduleId?: number; assignmentId?: number; assessmentId?: number;
+  timetableSlotId?: number; timetableExceptionId?: number;
 }
 
 // Dashboard

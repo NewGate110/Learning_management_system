@@ -67,3 +67,8 @@ public sealed record ModuleFinalGradeResponse(
     string Status,
     double? FinalGrade,
     bool IsReleased);
+
+public sealed record ModuleGradeReleaseResponse(
+    int ModuleId,
+    int ReleasedStudentCount,
+    int AlreadyReleasedStudentCount);

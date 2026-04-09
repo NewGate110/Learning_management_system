@@ -260,6 +260,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasMaxLength(32)
                 .IsRequired();
 
+            entity.Property(progress => progress.IsReleased)
+                .HasDefaultValue(false);
+
             entity.HasIndex(progress => new { progress.StudentId, progress.ModuleId })
                 .IsUnique();
 
