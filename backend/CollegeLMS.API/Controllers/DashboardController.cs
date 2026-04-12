@@ -84,7 +84,7 @@ public class DashboardController(
                 module.Title,
                 module.Type,
                 progress?.Status ?? ModuleProgressStatuses.InProgress,
-                progress?.FinalGrade,
+                progress?.IsReleased == true ? progress.FinalGrade : null,
                 attendance.Percentage));
         }
 

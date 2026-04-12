@@ -47,6 +47,7 @@ import { CourseResponse } from '../../core/models';
                     <td>
                       <div style="display:flex;gap:6px">
                         <a [routerLink]="['/courses', c.id]" class="btn secondary sm">View</a>
+                        <a [routerLink]="['/courses', c.id, 'modules']" class="btn secondary sm">Modules</a>
                         @if (auth.isAdmin()) {
                           <button class="btn danger sm" (click)="confirmDelete(c)">Delete</button>
                         }

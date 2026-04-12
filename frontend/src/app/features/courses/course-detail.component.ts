@@ -22,9 +22,12 @@ import { CourseDetailResponse, ModuleSummaryResponse, AssignmentResponse } from 
             <h1>{{ course()!.title }}</h1>
             <p>{{ course()!.instructorName }} · {{ course()!.studentIds.length }} students</p>
           </div>
-          @if (auth.isAdmin() || auth.isInstructor()) {
-            <button class="btn primary" (click)="showModuleModal.set(true)">+ Add Module</button>
-          }
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a [routerLink]="['/courses', course()!.id, 'modules']" class="btn secondary">Open Modules</a>
+            @if (auth.isAdmin() || auth.isInstructor()) {
+              <button class="btn primary" (click)="showModuleModal.set(true)">+ Add Module</button>
+            }
+          </div>
         </div>
 
         <p class="course-desc fade-up fade-up-1">{{ course()!.description }}</p>

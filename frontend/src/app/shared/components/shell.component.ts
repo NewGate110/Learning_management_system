@@ -10,11 +10,14 @@ const NAV: NavItem[] = [
   { path: '/dashboard',     label: 'Dashboard',     icon: 'dashboard',        section: 'MAIN' },
   { path: '/courses',       label: 'Courses',       icon: 'menu_book',        section: 'MAIN' },
   { path: '/assignments',   label: 'Assignments',   icon: 'assignment',       section: 'MAIN' },
+  { path: '/assessments',   label: 'Assessments',   icon: 'quiz',             section: 'MAIN' },
   { path: '/grades',        label: 'Grades',        icon: 'grade',            section: 'MAIN' },
   { path: '/attendance',    label: 'Attendance',    icon: 'fact_check',       section: 'MAIN' },
+  { path: '/calendar',      label: 'Calendar',      icon: 'calendar_month',   section: 'MAIN' },
   { path: '/timetable',     label: 'Timetable',     icon: 'calendar_month',   section: 'MAIN' },
   { path: '/progress',      label: 'Progress',      icon: 'trending_up',      roles: ['Student'], section: 'MAIN' },
   { path: '/notifications', label: 'Notifications', icon: 'notifications',    section: 'OTHER' },
+  { path: '/admin',         label: 'Admin Panel',   icon: 'admin_panel_settings', roles: ['Admin'], section: 'ADMIN' },
   { path: '/users',         label: 'Users',         icon: 'group',            roles: ['Admin'], section: 'ADMIN' },
 ];
 

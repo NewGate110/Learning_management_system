@@ -51,7 +51,7 @@ public class GradeController(
                     progress.StudentId == submission.StudentId,
                 cancellationToken);
 
-        if (existingProgress?.FinalGrade is not null)
+        if (existingProgress?.IsReleased == true)
         {
             return Conflict(new { message = "Final module grade is already released. Grades can no longer be edited." });
         }
@@ -88,10 +88,9 @@ public class GradeController(
             moduleId: submission.Assignment.ModuleId,
             cancellationToken: cancellationToken);
 
-        await HandleFinalGradeReleaseAsync(
+        await moduleProgressService.RecalculateAsync(
             submission.Assignment.ModuleId,
             submission.StudentId,
-            existingProgress?.FinalGrade,
             cancellationToken);
 
         return Ok(ToAssignmentGradeResponse(
@@ -134,7 +133,7 @@ public class GradeController(
                     progress.StudentId == grade.Submission.StudentId,
                 cancellationToken);
 
-        if (existingProgress?.FinalGrade is not null)
+        if (existingProgress?.IsReleased == true)
         {
             return Conflict(new { message = "Final module grade is already released. Grades can no longer be edited." });
         }
@@ -146,10 +145,9 @@ public class GradeController(
 
         await db.SaveChangesAsync(cancellationToken);
 
-        await HandleFinalGradeReleaseAsync(
+        await moduleProgressService.RecalculateAsync(
             grade.Submission.Assignment.ModuleId,
             grade.Submission.StudentId,
-            existingProgress?.FinalGrade,
             cancellationToken);
 
         return Ok(ToAssignmentGradeResponse(
@@ -195,7 +193,7 @@ public class GradeController(
                     progress.StudentId == request.StudentId,
                 cancellationToken);
 
-        if (existingProgress?.FinalGrade is not null)
+        if (existingProgress?.IsReleased == true)
         {
             return Conflict(new { message = "Final module grade is already released. Grades can no longer be edited." });
         }
@@ -227,10 +225,9 @@ public class GradeController(
 
         await db.SaveChangesAsync(cancellationToken);
 
-        await HandleFinalGradeReleaseAsync(
+        await moduleProgressService.RecalculateAsync(
             assessment.ModuleId,
             request.StudentId,
-            existingProgress?.FinalGrade,
             cancellationToken);
 
         return Ok(ToAssessmentGradeResponse(grade, assessment.ModuleId));
@@ -268,7 +265,7 @@ public class GradeController(
                     progress.StudentId == grade.StudentId,
                 cancellationToken);
 
-        if (existingProgress?.FinalGrade is not null)
+        if (existingProgress?.IsReleased == true)
         {
             return Conflict(new { message = "Final module grade is already released. Grades can no longer be edited." });
         }
@@ -279,10 +276,9 @@ public class GradeController(
 
         await db.SaveChangesAsync(cancellationToken);
 
-        await HandleFinalGradeReleaseAsync(
+        await moduleProgressService.RecalculateAsync(
             grade.Assessment.ModuleId,
             grade.StudentId,
-            existingProgress?.FinalGrade,
             cancellationToken);
 
         return Ok(ToAssessmentGradeResponse(grade, grade.Assessment.ModuleId));
@@ -364,6 +360,7 @@ public class GradeController(
     }
 
     [HttpGet("modules/{moduleId:int}/final")]
+    [HttpGet("module/{moduleId:int}/final")]
     public async Task<ActionResult<ModuleFinalGradeResponse>> GetFinalModuleGrade(
         int moduleId,
         [FromQuery] int? studentId,
@@ -412,54 +409,90 @@ public class GradeController(
 
         var progress = await moduleProgressService.RecalculateAsync(moduleId, targetStudentId, cancellationToken);
 
+        var canViewFinalGrade = !User.IsInRole(UserRoles.Student) || progress.IsReleased;
+
         return Ok(new ModuleFinalGradeResponse(
             moduleId,
             targetStudentId,
             progress.Status,
-            progress.FinalGrade,
-            progress.FinalGrade.HasValue));
+            canViewFinalGrade ? progress.FinalGrade : null,
+            progress.IsReleased));
     }
 
-    private async Task HandleFinalGradeReleaseAsync(
+    [HttpPost("modules/{moduleId:int}/release")]
+    [HttpPost("module/{moduleId:int}/release")]
+    [Authorize(Roles = $"{UserRoles.Instructor},{UserRoles.Admin}")]
+    public async Task<ActionResult<ModuleGradeReleaseResponse>> ReleaseModuleGrades(
         int moduleId,
-        int studentId,
-        double? previousFinalGrade,
         CancellationToken cancellationToken)
     {
-        var progress = await moduleProgressService.RecalculateAsync(moduleId, studentId, cancellationToken);
-
-        if (previousFinalGrade is not null || progress.FinalGrade is null)
-        {
-            return;
-        }
-
-        var student = await db.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(user => user.Id == studentId, cancellationToken);
         var module = await db.Modules
-            .AsNoTracking()
+            .Include(item => item.Course)
+                .ThenInclude(course => course!.Students)
             .FirstOrDefaultAsync(item => item.Id == moduleId, cancellationToken);
 
-        if (student is null || module is null)
+        if (module is null || module.Course is null)
         {
-            return;
+            return NotFound();
         }
 
-        var message = $"Final grade for module '{module.Title}' has been released: {progress.FinalGrade:F2}.";
+        var permission = EnsureCanGrade(module.Course.InstructorId);
+        if (permission is not null)
+        {
+            return permission;
+        }
 
-        await notificationService.CreateAsync(
-            studentId,
-            NotificationTypes.FinalGradeReleased,
-            message,
-            moduleId: moduleId,
-            cancellationToken: cancellationToken);
+        var releasedCount = 0;
+        var alreadyReleasedCount = 0;
+        var newlyReleased = new List<(User Student, ModuleProgress Progress)>();
 
-        await emailService.SendFinalGradeReleasedAsync(
-            student.Email,
-            student.Name,
-            module.Title,
-            progress.FinalGrade.Value,
-            cancellationToken);
+        foreach (var student in module.Course.Students.OrderBy(student => student.Id))
+        {
+            var progress = await moduleProgressService.RecalculateAsync(moduleId, student.Id, cancellationToken);
+            if (progress.FinalGrade is null)
+            {
+                return Conflict(new
+                {
+                    message = $"All assignments and assessments must be graded before releasing final grades for '{module.Title}'."
+                });
+            }
+
+            if (progress.IsReleased)
+            {
+                alreadyReleasedCount++;
+                continue;
+            }
+
+            progress.IsReleased = true;
+            releasedCount++;
+            newlyReleased.Add((student, progress));
+        }
+
+        if (releasedCount > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+
+            foreach (var (student, progress) in newlyReleased)
+            {
+                var message = $"Final grade for module '{module.Title}' has been released: {progress.FinalGrade:F2}.";
+
+                await notificationService.CreateAsync(
+                    student.Id,
+                    NotificationTypes.FinalGradeReleased,
+                    message,
+                    moduleId: moduleId,
+                    cancellationToken: cancellationToken);
+
+                await emailService.SendFinalGradeReleasedAsync(
+                    student.Email,
+                    student.Name,
+                    module.Title,
+                    progress.FinalGrade!.Value,
+                    cancellationToken);
+            }
+        }
+
+        return Ok(new ModuleGradeReleaseResponse(moduleId, releasedCount, alreadyReleasedCount));
     }
 
     private async Task<int?> ResolveStudentIdAsync(int? requestedStudentId)

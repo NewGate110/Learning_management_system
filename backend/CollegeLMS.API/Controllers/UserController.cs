@@ -153,4 +153,42 @@ public class UserController(AppDbContext db) : ControllerBase
             user.EnrolledCourses.OrderBy(course => course.Id).Select(course => course.Id).ToList(),
             user.CoursesTeaching.OrderBy(course => course.Id).Select(course => course.Id).ToList()));
     }
+
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = UserRoles.Admin)]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        var user = await db.Users
+            .Include(item => item.CoursesTeaching)
+            .Include(item => item.TimetableSlotsTeaching)
+            .Include(item => item.AssignmentGradesGiven)
+            .Include(item => item.AssessmentGradesGiven)
+            .Include(item => item.AttendanceSessionsCreated)
+            .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        var hasProtectedReferences =
+            user.CoursesTeaching.Count > 0 ||
+            user.TimetableSlotsTeaching.Count > 0 ||
+            user.AssignmentGradesGiven.Count > 0 ||
+            user.AssessmentGradesGiven.Count > 0 ||
+            user.AttendanceSessionsCreated.Count > 0;
+
+        if (hasProtectedReferences)
+        {
+            return Conflict(new
+            {
+                message = "This user cannot be deleted while they are referenced by courses, timetable slots, grades, or attendance sessions."
+            });
+        }
+
+        db.Users.Remove(user);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return NoContent();
+    }
 }
