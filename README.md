@@ -2,10 +2,10 @@
 
 **Enhanced Moodle-style Learning Management System**
 
-**Stack:** ASP.NET Core 10 (C#) · Angular 21 + Angular Material · PostgreSQL 18 · Docker Compose
+**Stack:** ASP.NET Core 10 (C#) · Angular 19.2 + Angular Material 19.2 · PostgreSQL 18 · Docker Compose
 
 **Innovation Features:**
-- ★ Student Progress Dashboard — visual analytics with ng2-charts (grade trends, submission rates, course progress, upcoming deadlines)
+- ★ Student Progress Dashboard — visual analytics with grade trends, submission rates, course progress, and upcoming deadlines (chart components built; requires `npm install ng2-charts chart.js` to render)
 - ★ Automated Deadline Reminder System — email via MailKit/SendGrid + in-app notification bell with read/unread state
 
 ---
@@ -49,9 +49,9 @@ Key variables in `.env`:
 
 | Variable | Description |
 |----------|-------------|
-| `POSTGRES_DB` | Database name (default: `collegelms`) |
-| `POSTGRES_USER` | PostgreSQL username |
-| `POSTGRES_PASSWORD` | PostgreSQL password — **change this** |
+| `POSTGRES_DB` | collegelms |
+| `POSTGRES_USER` |admin |
+| `POSTGRES_PASSWORD` | admin123 |
 | `JWT_SECRET` | Must be at least 32 characters |
 | `JWT_ISSUER` | Token issuer identifier |
 | `JWT_AUDIENCE` | Token audience identifier |
@@ -128,21 +128,22 @@ The database is automatically seeded with test data on first startup. All accoun
 | Web Development | Build modern web apps with Angular and ASP.NET Core |
 | Database Systems | Fundamentals of relational databases and SQL |
 
-### Assignments (2 per course)
+### Assignments (7 total across 3 courses)
 
 | Title | Course | Deadline |
 |-------|--------|----------|
 | Hello World App | Introduction to Programming | +7 days |
+| Control Flow Challenge | Introduction to Programming | +10 days |
 | OOP Exercise | Introduction to Programming | +14 days |
-| Angular SPA | Web Development | +10 days |
-| REST API Design | Web Development | +3 days |
-| ER Diagram | Database Systems | Past |
-| SQL Query Challenge | Database Systems | +5 days |
+| Angular SPA | Web Development | +9 days |
+| REST API Design | Web Development | +5 days |
+| ER Diagram | Database Systems | +4 days |
+| SQL Query Challenge | Database Systems | +8 days |
 
 ### Other seeded data
 - **CourseEnrollments** — John Student enrolled in all 3 courses
-- **Grades** — 3 graded submissions for John Student (88.5, 74.0, 91.0)
-- **Notifications** — 2 unread deadline reminders + 1 read grading notification for John Student
+- **Grades** — 2 assignment grades (88.5, 74.0) + 1 assessment grade (82.0) for John Student
+- **Notifications** — 1 unread deadline reminder + 1 read grading notification for John Student (2 total)
 
 > To reset and re-seed, run `docker compose down -v && docker compose up --build`
 
@@ -185,66 +186,84 @@ college-lms/
 │
 ├── backend/
 │   └── CollegeLMS.API/
-│       ├── Controllers/
-│       │   ├── AuthController.cs        # Register, Login — returns JWT
-│       │   ├── CourseController.cs      # CRUD for courses
-│       │   ├── AssignmentController.cs  # Assignment management + submissions
-│       │   ├── UserController.cs        # User management (admin)
-│       │   ├── NotificationController.cs # ★ Fetch & mark notifications read
-│       │   └── ProgressController.cs    # ★ Per-student progress data for charts
-│       ├── Models/
+│       ├── Controllers/         # 13 controllers
+│       │   ├── AuthController.cs          # Register, Login — returns JWT
+│       │   ├── CourseController.cs        # CRUD for courses
+│       │   ├── ModuleController.cs        # Admin CRUD for modules within a course
+│       │   ├── AssignmentController.cs    # Assignment management + submissions
+│       │   ├── AssessmentController.cs    # In-person assessment management
+│       │   ├── AttendanceController.cs    # ★ Session creation, mark/view attendance
+│       │   ├── GradeController.cs         # ★ Assignment & assessment grading + release workflow
+│       │   ├── TimetableController.cs     # ★ Slots, exceptions, class cancel/reschedule
+│       │   ├── CalendarController.cs      # ★ Per-user filtered calendar events
+│       │   ├── DashboardController.cs     # ★ Role-specific dashboard data (student/instructor/admin)
+│       │   ├── UserController.cs          # User management (admin)
+│       │   ├── NotificationController.cs  # ★ Fetch & mark notifications read
+│       │   └── ProgressController.cs      # ★ Per-student progress data for charts
+│       ├── Models/              # 14 entity models
 │       │   ├── User.cs
-│       │   ├── Course.cs
+│       │   ├── Course.cs                  # Includes StartDate, EndDate
+│       │   ├── Module.cs
 │       │   ├── Assignment.cs
-│       │   ├── Grade.cs
-│       │   └── Notification.cs          # ★ read/unread in-app alerts
+│       │   ├── Submission.cs
+│       │   ├── Assessment.cs              # Includes Location field
+│       │   ├── AssignmentGrade.cs
+│       │   ├── AssessmentGrade.cs
+│       │   ├── ModuleProgress.cs          # Includes IsReleased flag (grade release gate)
+│       │   ├── AttendanceSession.cs
+│       │   ├── AttendanceRecord.cs
+│       │   ├── TimetableSlot.cs
+│       │   ├── TimetableException.cs
+│       │   └── Notification.cs            # ★ read/unread in-app alerts
 │       ├── Data/
-│       │   └── AppDbContext.cs          # EF Core DbContext
-│       ├── Services/
-│       │   ├── ProgressService.cs       # ★ Aggregate queries for chart data
-│       │   ├── NotificationService.cs   # ★ Create/retrieve notifications
-│       │   └── EmailService.cs          # ★ MailKit email sending
+│       │   └── AppDbContext.cs            # EF Core DbContext + seed data
+│       ├── Services/            # 8 services
+│       │   ├── JwtTokenService.cs
+│       │   ├── ProgressService.cs         # ★ Aggregate queries for chart data
+│       │   ├── NotificationService.cs     # ★ Create/retrieve notifications
+│       │   ├── EmailService.cs            # ★ MailKit email sending
+│       │   ├── AttendanceService.cs       # ★ Attendance logic + 80% gate calculation
+│       │   ├── ModuleProgressService.cs   # ★ Sequential module unlock logic
+│       │   └── TimetableService.cs        # ★ Slot + exception helpers
 │       ├── BackgroundServices/
-│       │   └── DeadlineReminderService.cs  # ★ IHostedService — polls for upcoming deadlines
+│       │   └── DeadlineReminderService.cs # ★ IHostedService — polls for upcoming deadlines
 │       ├── Middleware/
 │       │   └── ErrorHandlingMiddleware.cs
-│       ├── Program.cs                   # App bootstrap, DI, JWT, CORS, Swagger
+│       ├── Migrations/                    # 3 EF Core migrations
+│       ├── Program.cs                     # App bootstrap, DI, JWT, CORS, Swagger, auto-migration
 │       └── appsettings.json
 │
 ├── frontend/
 │   └── src/app/
-│       ├── pages/
-│       │   ├── login/                   # Login page — Reactive Form
-│       │   ├── dashboard/               # Main dashboard — notification alert widget
-│       │   ├── courses/                 # Course listing
-│       │   ├── course-detail/           # Single course view
-│       │   ├── assignments/             # Assignment submission
-│       │   ├── quiz/                    # Quiz page
-│       │   ├── progress-dashboard/      # ★ Analytics page with all charts
-│       │   └── admin-panel/             # Admin-only management panel
-│       ├── components/
+│       ├── features/            # One directory per feature (lazy-loaded standalone components)
+│       │   ├── auth/            # login, register
+│       │   ├── dashboard/       # ★ Role-aware (Student / Instructor / Admin)
+│       │   ├── courses/         # courses list, course-detail, course-modules
+│       │   ├── modules/         # module-detail
+│       │   ├── assignments/     # view & submit assignments
+│       │   ├── assessments/     # view assessments
+│       │   ├── grades/          # ★ View grades; instructor grade release
+│       │   ├── attendance/      # ★ View sessions; instructor mark attendance
+│       │   ├── calendar/        # ★ Per-role calendar events
+│       │   ├── timetable/       # ★ Weekly timetable + exception posting
+│       │   ├── notifications/   # Notification list
+│       │   ├── progress/        # ★ Analytics page (ng2-charts not yet installed)
+│       │   └── users/           # Admin user management
+│       ├── core/
+│       │   ├── models/index.ts          # All TypeScript interfaces (matches backend DTOs)
+│       │   ├── services/                # api.service.ts, auth.service.ts, toast.service.ts
+│       │   ├── guards/auth.guard.ts     # Route guard — redirects unauthenticated users
+│       │   └── interceptors/auth.interceptor.ts  # Attaches JWT to every request
+│       ├── components/          # Shared UI components
 │       │   ├── navbar/                  # Top nav — ★ notification bell with unread badge
 │       │   ├── sidebar/                 # Navigation sidebar
 │       │   ├── notification-dropdown/   # ★ Dropdown showing recent reminders
-│       │   └── progress-charts/
-│       │       ├── course-progress-bar/         # ★ Progress bar per course
-│       │       ├── grade-line-chart/             # ★ Grade trend line chart
-│       │       ├── submission-rate-chart/        # ★ Assignment submission rate
-│       │       └── upcoming-deadlines-widget/    # ★ Deadlines widget
-│       ├── services/
-│       │   ├── api.service.ts           # Base HTTP service — all backend calls
-│       │   ├── auth.service.ts          # JWT login, token storage, role helpers
-│       │   ├── notification.service.ts  # ★ Poll/fetch notifications, mark as read
-│       │   └── progress.service.ts      # ★ Fetch progress data for charts
-│       ├── guards/
-│       │   └── auth.guard.ts            # Route guard — redirects unauthenticated users
-│       └── models/
-│           ├── user.model.ts
-│           ├── course.model.ts
-│           └── notification.model.ts
+│       │   └── progress-charts/         # Chart stubs (grade-line, submission-rate, progress-bar, deadlines)
+│       ├── shared/components/   # shell.component, toast-container
+│       └── pages/admin-panel/   # Legacy location — admin panel only; all other pages use features/
 │
-├── docs/                        # UML diagrams + system docs (Person 2)
-└── tests/                       # Test plan + test cases (Person 4)
+├── docs/                        # System documentation (Person 2)
+└── tests/                       # Test cases (Person 4) — currently empty
 ```
 
 ---
@@ -263,12 +282,13 @@ college-lms/
 ## Innovation Features
 
 ### ★ Student Progress Dashboard
-- Dedicated `/progress-dashboard` page with four chart components built with **ng2-charts + Chart.js**
+- Dedicated `/progress` page with four chart components (`grade-line-chart`, `submission-rate-chart`, `course-progress-bar`, `upcoming-deadlines-widget`)
 - **Course progress bar** — completion percentage per enrolled course
 - **Grade trend line** — grade history over time per course
 - **Submission rate chart** — assignment submission rate breakdown
 - **Upcoming deadlines widget** — assignments due within the next 7 days
 - Backend: `ProgressController` + `ProgressService` return aggregate PostgreSQL query results ready for charts
+- **Note:** Chart components are implemented but `ng2-charts` and `chart.js` are not yet installed. Run `npm install ng2-charts chart.js` inside `frontend/` to enable rendering.
 
 ### ★ Automated Deadline Reminder System
 - **Email reminders:** `DeadlineReminderService` (IHostedService) runs on a schedule, queries for upcoming assignment deadlines, and sends emails via **MailKit + SendGrid**

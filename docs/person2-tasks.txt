@@ -1,0 +1,133 @@
+PERSON 2 — PENDING TASKS
+
+SUMMARY
+------------------------
+  Task                          Recommended Tool
+  ---------------------------------------------------------
+  Class diagram                 draw.io / PlantUML
+  ER diagram                    draw.io / DBeaver auto-gen
+  Use case diagram              draw.io / PlantUML
+  Sequence diagrams (x5)        PlantUML
+  Risk assessment               Any Markdown editor
+  ---------------------------------------------------------
+
+TASK 1 — CLASS DIAGRAM
+-----------------------
+What's needed:
+  A UML class diagram showing all 14 entities, their properties, types,
+  and relationships (associations, multiplicities).
+
+How to complete it:
+  All source material is already in docs/handoff-person2-uml-lead.md —
+  every entity, field, type, and relationship is listed there.
+  Use a free tool like draw.io (https://draw.io), PlantUML (https://plantuml.com),
+  or Lucidchart (https://lucidchart.com).
+
+  Key relationships to capture:
+    - Course → Module (one-to-many)
+    - Module → Assignment, Assessment, TimetableSlot, AttendanceSession (one-to-many each)
+    - TimetableSlot → TimetableException (one-to-many)
+    - Assignment → Submission → AssignmentGrade (chain)
+    - Assessment → AssessmentGrade
+    - User ↔ Course (many-to-many via CourseEnrollments join table)
+    - User → ModuleProgress, Notification, AttendanceRecord
+
+  Export as PNG or SVG and save to: docs/diagrams/class-diagram.png
+
+
+TASK 2 — ER DIAGRAM
+--------------------
+What's needed:
+  A database-level entity-relationship diagram showing tables, primary keys,
+  foreign keys, and cardinality.
+
+How to complete it:
+  Same as the class diagram but focused on the database schema rather than
+  OOP relationships. Use draw.io, or use DBeaver (https://dbeaver.io) to
+  auto-generate it directly from the running PostgreSQL database.
+  The Docker stack is ready — connect to localhost:5432.
+
+  Key things to show:
+    - All PKs (Id) and FKs (e.g. ModuleId, StudentId, InstructorId)
+    - The CourseEnrollments join table (many-to-many between Users and Courses)
+    - Nullable FKs: Notification.AssignmentId, TimetableException.RescheduleDate,
+      ModuleProgress.FinalGrade
+
+  Save to: docs/diagrams/er-diagram.png
+
+
+TASK 3 — USE CASE DIAGRAM
+--------------------------
+What's needed:
+  A UML use case diagram showing the 3 actors (Student, Instructor, Admin)
+  and all their available actions.
+
+How to complete it:
+  The full list of use cases per role is already written in
+  docs/handoff-person2-uml-lead.md under "Role-Based Use Cases".
+  Just translate those bullet points into a diagram.
+
+  Suggested layout:
+    Left actor — Student:
+      login, view courses, submit assignment, view grades,
+      view timetable, receive notifications, view progress dashboard
+
+    Middle actor — Instructor:
+      login, mark attendance, grade assignments,
+      grade assessments, cancel timetable session
+
+    Right actor — Admin:
+      login, manage courses/modules, manage users, set timetable roster
+
+    Shared use cases (login, view calendar, view timetable) sit in the
+    middle and connect to multiple actors with <<include>> or <<extend>> arrows.
+
+  Save to: docs/diagrams/use-case-diagram.png
+
+
+TASK 4 — SEQUENCE DIAGRAMS
+---------------------------
+What's needed:
+  Sequence diagrams for the key system flows.
+
+How to complete it:
+  Recommended 5 flows to cover:
+
+  1. Login
+     Client → POST /api/auth/login → validate credentials → return JWT
+
+  2. Submit Assignment
+     Client → check attendance >= 80% → POST /api/assignment/submit
+     → store Submission → return confirmation
+
+  3. Mark Attendance
+     Instructor → POST /api/attendance → create AttendanceSession
+     + AttendanceRecord per student
+
+  4. Grade Release
+     Instructor grades last item → system checks all items graded
+     → sets ModuleProgress.FinalGrade → creates Notification → sends email
+
+  5. Deadline Reminder (Background Service)
+     DeadlineReminderService timer fires → queries assignments due in 48hrs
+     → for each: create Notification + send email (skips duplicates)
+
+  Use PlantUML (free, text-based) or draw.io.
+  Save each as a separate file:
+    docs/diagrams/seq-login.png
+    docs/diagrams/seq-submit-assignment.png
+    docs/diagrams/seq-mark-attendance.png
+    docs/diagrams/seq-grade-release.png
+    docs/diagrams/seq-deadline-reminder.png
+
+
+
+
+
+NOTE: All source material already exists. The handoff doc and feature plan
+have everything needed. No code changes are required for any of these tasks.
+
+Reference files:
+  - docs/handoff-person2-uml-lead.md  (entities, relationships, API endpoints, use cases)
+  - docs/feature-plan.md              (full feature descriptions and flows)
+  - docs/requirements.md              (functional/non-functional requirements)
