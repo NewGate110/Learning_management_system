@@ -2,11 +2,14 @@ import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
 import { ProgressSummaryResponse } from '../../core/models';
+import { GradeLineChartComponent } from '../../components/progress-charts/grade-line-chart/grade-line-chart.component';
+import { SubmissionRateChartComponent } from '../../components/progress-charts/submission-rate-chart/submission-rate-chart.component';
+import { CourseProgressBarComponent } from '../../components/progress-charts/course-progress-bar/course-progress-bar.component';
 
 @Component({
   selector: 'app-progress',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, GradeLineChartComponent, SubmissionRateChartComponent, CourseProgressBarComponent],
   template: `
     <div class="page-header fade-up">
       <h1 class="page-title">Progress</h1>
@@ -150,6 +153,16 @@ import { ProgressSummaryResponse } from '../../core/models';
             </div>
           </div>
         }
+
+        <!-- Interactive Charts -->
+        <div class="page-header fade-up" style="margin-top:24px">
+          <h2 class="page-title" style="font-size:1.25rem">Interactive Charts</h2>
+        </div>
+        <app-grade-line-chart [points]="data()!.gradeTrend.points" />
+        <div class="grid-2" style="margin-top:16px">
+          <app-submission-rate-chart [submissions]="data()!.submissions" />
+          <app-course-progress-bar [courses]="data()!.courses.courses" />
+        </div>
       }
     </div>
   `,
