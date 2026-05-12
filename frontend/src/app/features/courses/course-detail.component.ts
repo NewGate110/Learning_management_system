@@ -176,23 +176,106 @@ import { CourseDetailResponse, ModuleSummaryResponse, AssignmentResponse } from 
     }
   `,
   styles: [`
-    .back-link { font-size: 13px; color: var(--lms-muted); display: block; margin-bottom: 8px; }
-    .back-link:hover { color: var(--lms-accent); }
-    .course-desc { color: var(--lms-muted); margin-bottom: 16px; max-width: 700px; }
-    .date-row { display: flex; gap: 8px; margin-bottom: 32px; }
-    .section-title { font-size: 1.3rem; margin-bottom: 16px; }
+    .back-link { font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 8px; transition: color .15s; }
+    .back-link:hover { color: var(--blue); }
+    .course-desc { color: var(--text-secondary); margin-bottom: 16px; max-width: 700px; font-size: 15px; }
+    .date-row { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; }
+    .section-title { font-family: var(--font-heading); font-size: 20px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
     .modules-list { display: flex; flex-direction: column; gap: 12px; }
     .module-row { padding: 0; overflow: hidden; }
-    .module-header { display: flex; align-items: center; gap: 16px; padding: 18px 24px; cursor: pointer; }
-    .module-header:hover { background: var(--lms-surface); }
-    .module-order { width: 32px; height: 32px; background: var(--lms-accent-pale); color: var(--lms-accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+    .module-header { display: flex; align-items: center; gap: 16px; padding: 18px 24px; cursor: pointer; transition: background .15s; }
+    .module-header:hover { background: var(--blue-soft); }
+    .module-order { width: 32px; height: 32px; background: var(--blue-dim); color: var(--blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
     .flex-1 { flex: 1; }
-    .chevron { color: var(--lms-muted); font-size: 12px; }
-    .module-body { padding: 0 24px 24px; border-top: 1px solid var(--lms-border); padding-top: 16px; }
+    .chevron { color: var(--muted); font-size: 12px; }
+    .module-body { padding: 16px 24px 24px; border-top: 1px solid var(--border); }
     .assignments-section { margin-top: 16px; }
-    .assignment-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--lms-border); }
+    .assignment-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
     .assignment-row:last-child { border-bottom: none; }
     .mb-16 { margin-bottom: 16px; }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(30,58,138,0.20);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      animation: fadeIn .2s ease;
+    }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      animation: modalIn .2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-header h2 {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .modal-footer {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .flex-col { display: flex; flex-direction: column; }
+    .gap-16 { gap: 16px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 14px; font-weight: 500; color: var(--text-secondary); }
+    .field input, .field textarea, .field select {
+      width: 100%;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    .field textarea { resize: vertical; min-height: 80px; }
+    .stat-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .stat-chip.grey  { background: var(--surface2); color: var(--text-secondary); }
+    .stat-chip.green { background: var(--green-dim); color: var(--green); }
+    .stat-chip.amber { background: var(--amber-dim); color: var(--amber-dark); }
+    .stat-chip.red   { background: var(--red-dim);   color: var(--red); }
+
+    @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes modalIn { from { opacity: 0; transform: scale(.96) translateY(8px); } to { opacity: 1; transform: none; } }
   `]
 })
 export class CourseDetailComponent implements OnInit {
