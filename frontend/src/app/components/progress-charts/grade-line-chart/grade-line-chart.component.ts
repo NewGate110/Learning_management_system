@@ -1,7 +1,7 @@
 /// ★ Innovation Feature — Student Progress Dashboard
 
 import { Component, Input, OnChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatCardModule } from '@angular/material/card';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartData, ChartOptions } from 'chart.js';
@@ -10,7 +10,7 @@ import { GradeTrendPoint } from '../../../core/models';
 @Component({
   selector: 'app-grade-line-chart',
   standalone: true,
-  imports: [CommonModule, MatCardModule, BaseChartDirective],
+  imports: [MatCardModule, BaseChartDirective],
   template: `
     <mat-card>
       <mat-card-header><mat-card-title>Grade Trend</mat-card-title></mat-card-header>

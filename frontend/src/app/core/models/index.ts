@@ -166,3 +166,82 @@ export interface UpcomingDeadlineItem {
   assignmentId: number; title: string; courseId: number; courseTitle: string;
   deadline: string; hoursRemaining: number;
 }
+
+// ─── Request Interfaces ───────────────────────────────────────────────────────
+// These define the exact shape of data sent TO the API.
+// Using these instead of 'unknown' gives TypeScript compile-time safety.
+
+export interface CreateCourseRequest {
+  title: string;
+  description?: string;
+  instructorId: number;
+  startDate?: string | null;
+  endDate?: string | null;
+  studentIds?: number[];
+}
+export type UpdateCourseRequest = CreateCourseRequest;
+
+export interface CreateModuleRequest {
+  courseId: number;
+  title: string;
+  description?: string;
+  type: string;
+  order?: number;
+}
+export type UpdateModuleRequest = CreateModuleRequest;
+
+export interface CreateAssignmentRequest {
+  moduleId: number;
+  title: string;
+  description?: string;
+  deadline: string;
+}
+export type UpdateAssignmentRequest = CreateAssignmentRequest;
+
+export interface SubmitAssignmentRequest {
+  fileUrl: string;
+}
+
+export interface GradeAssignmentRequest {
+  submissionId: number;
+  score: number;
+  feedback?: string;
+}
+
+export interface CreateAttendanceSessionRequest {
+  moduleId: number;
+  date: string;
+  records: AttendanceRecordRequest[];
+}
+export interface AttendanceRecordRequest {
+  studentId: number;
+  isPresent: boolean;
+}
+
+export interface CreateTimetableSlotRequest {
+  moduleId: number;
+  instructorId: number;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  location?: string;
+  effectiveFrom: string;
+  effectiveTo: string;
+}
+export type UpdateTimetableSlotRequest = CreateTimetableSlotRequest;
+
+export interface CreateTimetableExceptionRequest {
+  timetableSlotId: number;
+  date: string;
+  status: string;
+  reason?: string | null;
+  rescheduleDate?: string | null;
+  rescheduleStartTime?: string | null;
+  rescheduleEndTime?: string | null;
+}
+
+export interface UpdateUserRequest {
+  name: string;
+  email: string;
+  role: string;
+}

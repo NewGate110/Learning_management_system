@@ -1,7 +1,7 @@
 /// ★ Innovation Feature — Student Progress Dashboard
 
 import { Component, Input, OnChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatCardModule } from '@angular/material/card';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartData, ChartOptions } from 'chart.js';
@@ -10,7 +10,7 @@ import { CourseCompletionItem } from '../../../core/models';
 @Component({
   selector: 'app-course-progress-bar',
   standalone: true,
-  imports: [CommonModule, MatCardModule, BaseChartDirective],
+  imports: [MatCardModule, BaseChartDirective],
   template: `
     <mat-card>
       <mat-card-header><mat-card-title>Per-Course Completion</mat-card-title></mat-card-header>

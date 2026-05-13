@@ -1,3 +1,4 @@
+import { Title } from '@angular/platform-browser';
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -5,7 +6,7 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
-import { CourseResponse } from '../../core/models';
+import { CourseResponse, UserResponse } from '../../core/models';
 
 @Component({
   selector: 'app-courses',
@@ -68,7 +69,14 @@ import { CourseResponse } from '../../core/models';
           <div class="modal-title">New Course</div>
           <div class="form-group"><label class="form-label">Title</label><input class="form-input" [(ngModel)]="form.title" placeholder="Course title"></div>
           <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" [(ngModel)]="form.description" rows="3"></textarea></div>
-          <div class="form-group"><label class="form-label">Instructor ID</label><input class="form-input" type="number" [(ngModel)]="form.instructorId"></div>
+          <div class="form-group"><label class="form-label">Instructor</label>
+            <select class="form-input" [(ngModel)]="form.instructorId">
+              <option value="0">— Select instructor —</option>
+              @for (u of instructors(); track u.id) {
+                <option [value]="u.id">{{ u.name }}</option>
+              }
+            </select>
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div class="form-group"><label class="form-label">Start Date</label><input class="form-input" type="date" [(ngModel)]="form.startDate"></div>
             <div class="form-group"><label class="form-label">End Date</label><input class="form-input" type="date" [(ngModel)]="form.endDate"></div>
@@ -98,12 +106,14 @@ import { CourseResponse } from '../../core/models';
 export class CoursesComponent implements OnInit {
   auth  = inject(AuthService);
   private api   = inject(ApiService);
+  private title = inject(Title);
   private toast = inject(ToastService);
 
-  courses     = signal<CourseResponse[]>([]);
-  loading     = signal(true);
-  showModal   = signal(false);
-  saving      = signal(false);
+  courses      = signal<CourseResponse[]>([]);
+  instructors  = signal<UserResponse[]>([]);
+  loading      = signal(true);
+  showModal    = signal(false);
+  saving       = signal(false);
   deleteTarget = signal<CourseResponse | null>(null);
   search = '';
   form = { title: '', description: '', instructorId: 0, startDate: '', endDate: '' };
@@ -114,7 +124,12 @@ export class CoursesComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.title.setTitle('Courses — CollegeLMS');
     this.api.getCourses().subscribe({ next: cs => { this.courses.set(cs); this.loading.set(false); }, error: () => this.loading.set(false) });
+    // Fetch instructors for dropdown (Admin only — getUsers is Admin-restricted)
+    if (this.auth.isAdmin()) {
+      this.api.getUsers().subscribe({ next: us => this.instructors.set(us.filter(u => u.role === 'Instructor')), error: () => {} });
+    }
   }
 
   save() {

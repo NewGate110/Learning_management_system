@@ -42,7 +42,7 @@ import { CourseDetailResponse, ModuleSummaryResponse, StudentDashboardResponse, 
             <div class="stat-label">Completed</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value" style="color:var(--yellow)">{{ lockedCount() }}</div>
+            <div class="stat-value" style="color:var(--amber)">{{ lockedCount() }}</div>
             <div class="stat-label">Locked Sequential</div>
           </div>
         </div>
@@ -117,7 +117,7 @@ import { CourseDetailResponse, ModuleSummaryResponse, StudentDashboardResponse, 
     }
     .module-card:hover {
       transform: translateY(-2px);
-      border-color: var(--accent);
+      border-color: var(--blue);
     }
     .module-top {
       display: flex;
@@ -128,7 +128,7 @@ import { CourseDetailResponse, ModuleSummaryResponse, StudentDashboardResponse, 
     }
     .module-top h2 { font-size: 1.2rem; }
     .module-index {
-      color: var(--accent2);
+      color: var(--blue);
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: .6px;

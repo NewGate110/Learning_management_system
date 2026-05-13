@@ -23,7 +23,7 @@ export const routes: Routes = [
       { path: 'timetable',     loadComponent: () => import('./features/timetable/timetable.component').then(m => m.TimetableComponent) },
       { path: 'notifications', loadComponent: () => import('./features/notifications/notifications.component').then(m => m.NotificationsComponent) },
       { path: 'progress',      loadComponent: () => import('./features/progress/progress.component').then(m => m.ProgressComponent) },
-      { path: 'admin',         loadComponent: () => import('./pages/admin-panel/admin-panel.component').then(m => m.AdminPanelComponent) },
+      { path: 'admin',         loadComponent: () => import('./features/admin/admin-panel.component').then(m => m.AdminPanelComponent) },
       { path: 'users',         loadComponent: () => import('./features/users/users.component').then(m => m.UsersComponent) },
     ]
   },

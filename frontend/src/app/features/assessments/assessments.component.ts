@@ -1,3 +1,4 @@
+import { Title } from '@angular/platform-browser';
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -72,6 +73,7 @@ import { AssessmentGradeResponse, AssessmentResponse } from '../../core/models';
 })
 export class AssessmentsComponent {
   private api = inject(ApiService);
+  private title = inject(Title);
   auth = inject(AuthService);
 
   loading = signal(true);
@@ -80,6 +82,7 @@ export class AssessmentsComponent {
   search = '';
 
   ngOnInit() {
+    this.title.setTitle('Assessments — CollegeLMS');
     const grades$ = this.auth.isStudent()
       ? this.api.getAssessmentGrades()
       : of([] as AssessmentGradeResponse[]);

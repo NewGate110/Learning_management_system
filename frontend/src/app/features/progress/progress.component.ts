@@ -1,15 +1,13 @@
+import { Title } from '@angular/platform-browser';
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
 import { ProgressSummaryResponse } from '../../core/models';
-import { GradeLineChartComponent } from '../../components/progress-charts/grade-line-chart/grade-line-chart.component';
-import { SubmissionRateChartComponent } from '../../components/progress-charts/submission-rate-chart/submission-rate-chart.component';
-import { CourseProgressBarComponent } from '../../components/progress-charts/course-progress-bar/course-progress-bar.component';
 
 @Component({
   selector: 'app-progress',
   standalone: true,
-  imports: [CommonModule, GradeLineChartComponent, SubmissionRateChartComponent, CourseProgressBarComponent],
+  imports: [CommonModule],
   template: `
     <div class="page-header fade-up">
       <h1 class="page-title">Progress</h1>
@@ -34,7 +32,7 @@ import { CourseProgressBarComponent } from '../../components/progress-charts/cou
           </div>
           <div class="stat-card">
             <div class="stat-icon">⏰</div>
-            <div class="stat-value" style="color:var(--yellow)">{{ data()!.submissions.onTime }}</div>
+            <div class="stat-value" style="color:var(--amber)">{{ data()!.submissions.onTime }}</div>
             <div class="stat-label">On Time</div>
           </div>
           <div class="stat-card">
@@ -57,10 +55,10 @@ import { CourseProgressBarComponent } from '../../components/progress-charts/cou
               <div class="chart-area">
                 @for (p of data()!.gradeTrend.points; track $index) {
                   <div class="chart-bar-wrap">
-                    <div class="chart-score" [style.color]="p.score >= 75 ? 'var(--green)' : p.score >= 50 ? 'var(--yellow)' : 'var(--red)'">{{ p.score | number:'1.0-0' }}</div>
+                    <div class="chart-score" [style.color]="p.score >= 75 ? 'var(--green)' : p.score >= 50 ? 'var(--amber)' : 'var(--red)'">{{ p.score | number:'1.0-0' }}</div>
                     <div class="chart-bar-bg">
                       <div class="chart-bar-fill" [style.height.%]="p.score"
-                           [style.background]="p.score >= 75 ? 'var(--green)' : p.score >= 50 ? 'var(--yellow)' : 'var(--red)'"></div>
+                           [style.background]="p.score >= 75 ? 'var(--green)' : p.score >= 50 ? 'var(--amber)' : 'var(--red)'"></div>
                     </div>
                     <div class="chart-label">{{ p.label | slice:0:12 }}</div>
                   </div>
@@ -77,7 +75,7 @@ import { CourseProgressBarComponent } from '../../components/progress-charts/cou
                 <svg width="120" height="120" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border)" stroke-width="8"/>
                   <circle cx="50" cy="50" r="42" fill="none"
-                          stroke="var(--accent)"
+                          stroke="var(--blue)"
                           stroke-width="8"
                           [attr.stroke-dasharray]="circumference()"
                           [attr.stroke-dashoffset]="dashOffset()"
@@ -85,7 +83,7 @@ import { CourseProgressBarComponent } from '../../components/progress-charts/cou
                           transform="rotate(-90 50 50)"/>
                 </svg>
                 <div class="ring-label">
-                  <div style="font-family:'DM Serif Display',serif;font-size:22px">{{ data()!.submissions.submissionRatePercentage | number:'1.0-0' }}%</div>
+                  <div style="font-family:'Poppins',sans-serif;font-size:22px">{{ data()!.submissions.submissionRatePercentage | number:'1.0-0' }}%</div>
                   <div style="font-size:11px;color:var(--muted)">submitted</div>
                 </div>
               </div>
@@ -94,7 +92,7 @@ import { CourseProgressBarComponent } from '../../components/progress-charts/cou
                   <span style="color:var(--green)">● On time</span><span>{{ data()!.submissions.onTime }}</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;font-size:13px">
-                  <span style="color:var(--yellow)">● Late</span><span>{{ data()!.submissions.late }}</span>
+                  <span style="color:var(--amber)">● Late</span><span>{{ data()!.submissions.late }}</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;font-size:13px">
                   <span style="color:var(--muted)">● Pending</span><span>{{ data()!.submissions.pending }}</span>
@@ -153,16 +151,6 @@ import { CourseProgressBarComponent } from '../../components/progress-charts/cou
             </div>
           </div>
         }
-
-        <!-- Interactive Charts -->
-        <div class="page-header fade-up" style="margin-top:24px">
-          <h2 class="page-title" style="font-size:1.25rem">Interactive Charts</h2>
-        </div>
-        <app-grade-line-chart [points]="data()!.gradeTrend.points" />
-        <div class="grid-2" style="margin-top:16px">
-          <app-submission-rate-chart [submissions]="data()!.submissions" />
-          <app-course-progress-bar [courses]="data()!.courses.courses" />
-        </div>
       }
     </div>
   `,
@@ -180,6 +168,7 @@ import { CourseProgressBarComponent } from '../../components/progress-charts/cou
 })
 export class ProgressComponent implements OnInit {
   private api = inject(ApiService);
+  private title = inject(Title);
   data    = signal<ProgressSummaryResponse | null>(null);
   loading = signal(true);
 
@@ -188,6 +177,7 @@ export class ProgressComponent implements OnInit {
   avgBadge      = () => { const a = this.data()?.gradeTrend.averageScore ?? 0; return a >= 75 ? 'badge-green' : a >= 50 ? 'badge-yellow' : 'badge-red'; };
 
   ngOnInit() {
+    this.title.setTitle('Progress — CollegeLMS');
     this.api.getProgressSummary().subscribe({ next: d => { this.data.set(d); this.loading.set(false); }, error: () => this.loading.set(false) });
   }
 }

@@ -7,18 +7,18 @@ import { ApiService } from '../../core/services/api.service';
 interface NavItem { path: string; label: string; icon: string; roles?: string[]; section?: string; }
 
 const NAV: NavItem[] = [
-  { path: '/dashboard',     label: 'Dashboard',     icon: 'dashboard',        section: 'MAIN' },
-  { path: '/courses',       label: 'Courses',       icon: 'menu_book',        section: 'MAIN' },
-  { path: '/assignments',   label: 'Assignments',   icon: 'assignment',       section: 'MAIN' },
-  { path: '/assessments',   label: 'Assessments',   icon: 'quiz',             section: 'MAIN' },
-  { path: '/grades',        label: 'Grades',        icon: 'grade',            section: 'MAIN' },
-  { path: '/attendance',    label: 'Attendance',    icon: 'fact_check',       section: 'MAIN' },
-  { path: '/calendar',      label: 'Calendar',      icon: 'calendar_month',   section: 'MAIN' },
-  { path: '/timetable',     label: 'Timetable',     icon: 'calendar_month',   section: 'MAIN' },
-  { path: '/progress',      label: 'Progress',      icon: 'trending_up',      roles: ['Student'], section: 'MAIN' },
-  { path: '/notifications', label: 'Notifications', icon: 'notifications',    section: 'OTHER' },
-  { path: '/admin',         label: 'Admin Panel',   icon: 'admin_panel_settings', roles: ['Admin'], section: 'ADMIN' },
-  { path: '/users',         label: 'Users',         icon: 'group',            roles: ['Admin'], section: 'ADMIN' },
+  { path: '/dashboard',     label: 'Dashboard',     icon: 'dashboard',            section: 'MAIN' },
+  { path: '/courses',       label: 'Courses',       icon: 'menu_book',            section: 'MAIN' },
+  { path: '/assignments',   label: 'Assignments',   icon: 'assignment',           roles: ['Student', 'Instructor'], section: 'MAIN' },
+  { path: '/assessments',   label: 'Assessments',   icon: 'quiz',                 roles: ['Student', 'Instructor'], section: 'MAIN' },
+  { path: '/grades',        label: 'Grades',        icon: 'grade',                roles: ['Student', 'Instructor'], section: 'MAIN' },
+  { path: '/attendance',    label: 'Attendance',    icon: 'fact_check',           roles: ['Instructor', 'Admin'],   section: 'MAIN' },
+  { path: '/calendar',      label: 'Calendar',      icon: 'calendar_month',       section: 'MAIN' },
+  { path: '/timetable',     label: 'Timetable',     icon: 'schedule',             section: 'MAIN' },
+  { path: '/progress',      label: 'Progress',      icon: 'trending_up',          roles: ['Student'],               section: 'MAIN' },
+  { path: '/notifications', label: 'Notifications', icon: 'notifications',        section: 'OTHER' },
+  { path: '/admin',         label: 'Admin Panel',   icon: 'admin_panel_settings', roles: ['Admin'],                 section: 'ADMIN' },
+  { path: '/users',         label: 'Users',         icon: 'group',                roles: ['Admin'],                 section: 'ADMIN' },
 ];
 
 @Component({
@@ -68,7 +68,7 @@ const NAV: NavItem[] = [
         <!-- Mobile topbar -->
         <div class="mobile-topbar">
           <button class="hamburger" (click)="menuOpen.set(true)">☰</button>
-          <span class="mobile-logo">College<span style="color:var(--accent2)">LMS</span></span>
+          <span class="mobile-logo">College<span style="color:rgba(251,191,36,1)">LMS</span></span>
           <a routerLink="/notifications" style="font-size:18px;position:relative">
             <span class="material-icons" style="font-size:22px;vertical-align:middle">notifications</span>
             @if (unread() > 0) {
@@ -82,105 +82,145 @@ const NAV: NavItem[] = [
   `,
   styles: [`
     .sidebar {
-      width: 240px;
-      min-width: 240px;
+      width: 248px;
+      min-width: 248px;
       height: 100vh;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
+      background: var(--sidebar-bg);
       display: flex;
       flex-direction: column;
       overflow-y: auto;
       z-index: 100;
+      box-shadow: 2px 0 12px rgba(30,58,138,0.15);
     }
     .sidebar-logo {
-      padding: 24px 20px 20px;
-      font-family: 'DM Serif Display', serif;
-      font-size: 22px;
-      color: var(--text);
-      border-bottom: 1px solid var(--border);
+      padding: 24px 20px 22px;
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      border-bottom: 1px solid var(--sidebar-border);
       letter-spacing: -.3px;
       flex-shrink: 0;
     }
-    .sidebar-logo span { color: var(--accent2); }
+    .sidebar-logo span {
+      color: rgba(251,191,36,1);
+    }
     .sidebar-section {
-      padding: 16px 12px 8px;
+      padding: 18px 16px 6px;
       font-size: 10px;
       font-weight: 600;
-      color: var(--muted);
-      letter-spacing: 1px;
+      color: rgba(255,255,255,0.40);
+      letter-spacing: 1.2px;
       text-transform: uppercase;
+      font-family: var(--font-body);
     }
     .nav-item {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 9px 12px;
-      margin: 1px 8px;
+      padding: 10px 14px;
+      margin: 2px 10px;
       border-radius: var(--radius-sm);
       cursor: pointer;
-      color: var(--muted);
-      font-size: 13.5px;
+      color: var(--sidebar-text);
+      font-size: 14px;
       font-weight: 400;
+      font-family: var(--font-body);
       transition: all .15s;
       border: none;
       background: none;
-      width: calc(100% - 16px);
+      width: calc(100% - 20px);
       text-decoration: none;
     }
-    .nav-item:hover { background: var(--surface2); color: var(--text); text-decoration: none; }
-    .nav-item.active { background: var(--accent-dim); color: var(--accent2); font-weight: 500; }
-    .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+    .nav-item:hover {
+      background: var(--sidebar-hover);
+      color: #fff;
+      text-decoration: none;
+    }
+    .nav-item.active {
+      background: rgba(255,255,255,0.15);
+      color: var(--sidebar-active);
+      font-weight: 600;
+      box-shadow: inset 3px 0 0 rgba(251,191,36,1);
+    }
+    .nav-icon { font-size: 18px; width: 22px; text-align: center; flex-shrink: 0; }
     .nav-badge {
       margin-left: auto;
-      background: var(--red);
+      background: var(--amber);
       color: #fff;
       font-size: 10px;
-      font-weight: 600;
-      padding: 1px 6px;
+      font-weight: 700;
+      padding: 2px 7px;
       border-radius: 20px;
-      min-width: 18px;
+      min-width: 20px;
       text-align: center;
     }
     .sidebar-user {
       margin-top: auto;
       padding: 16px;
-      border-top: 1px solid var(--border);
+      border-top: 1px solid var(--sidebar-border);
       display: flex;
       align-items: center;
       gap: 10px;
       flex-shrink: 0;
     }
     .user-avatar {
-      width: 32px; height: 32px;
-      background: var(--accent-dim);
-      border: 1px solid var(--accent);
+      width: 34px; height: 34px;
+      background: rgba(251,191,36,0.20);
+      border: 2px solid rgba(251,191,36,0.60);
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 600;
-      color: var(--accent2);
+      font-size: 14px; font-weight: 700;
+      color: rgba(251,191,36,1);
       flex-shrink: 0;
+      font-family: var(--font-heading);
     }
     .user-info { flex: 1; min-width: 0; }
-    .user-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .user-role { font-size: 11px; color: var(--muted); background: var(--surface2); padding: 1px 6px; border-radius: 4px; display: inline-block; }
-    .logout-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; border-radius: 4px; font-size: 16px; transition: color .2s; }
-    .logout-btn:hover { color: var(--red); }
+    .user-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: var(--font-body);
+    }
+    .user-role {
+      font-size: 11px;
+      color: var(--sidebar-text);
+      background: rgba(255,255,255,0.10);
+      padding: 1px 7px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .logout-btn {
+      background: none;
+      border: none;
+      color: var(--sidebar-text);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 16px;
+      transition: all .2s;
+      line-height: 1;
+    }
+    .logout-btn:hover { color: #fff; background: rgba(220,38,38,0.25); }
     .main { flex: 1; height: 100vh; overflow-y: auto; background: var(--bg); min-width: 0; }
     .mobile-topbar { display: none; }
     .mobile-overlay { display: none; }
     @media (max-width: 768px) {
       .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-100%); transition: transform .25s ease; }
       .sidebar.mobile-open { transform: none; }
-      .mobile-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 99; }
+      .mobile-overlay { display: block; position: fixed; inset: 0; background: rgba(30,58,138,0.40); backdrop-filter: blur(2px); z-index: 99; }
       .mobile-topbar {
         display: flex; align-items: center; justify-content: space-between;
         padding: 12px 16px;
-        background: var(--surface);
-        border-bottom: 1px solid var(--border);
+        background: var(--navy);
+        border-bottom: 1px solid var(--sidebar-border);
         position: sticky; top: 0; z-index: 50;
       }
-      .hamburger { background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; }
-      .mobile-logo { font-family: 'DM Serif Display', serif; font-size: 18px; }
+      .hamburger { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; }
+      .mobile-logo { font-family: var(--font-heading); font-size: 18px; color: #fff; font-weight: 700; }
     }
   `]
 })

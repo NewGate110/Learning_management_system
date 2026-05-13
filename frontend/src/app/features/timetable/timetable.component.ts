@@ -1,10 +1,11 @@
+import { Title } from '@angular/platform-browser';
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
-import { TimetableSessionEventResponse, TimetableSlotResponse } from '../../core/models';
+import { TimetableSessionEventResponse, TimetableSlotResponse, UserResponse, ModuleSummaryResponse } from '../../core/models';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -149,8 +150,22 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         <div class="modal" (click)="$event.stopPropagation()">
           <div class="modal-title">Add Timetable Slot</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="form-group"><label class="form-label">Module ID</label><input class="form-input" type="number" [(ngModel)]="slotForm.moduleId"></div>
-            <div class="form-group"><label class="form-label">Instructor ID</label><input class="form-input" type="number" [(ngModel)]="slotForm.instructorId"></div>
+            <div class="form-group"><label class="form-label">Module</label>
+              <select class="form-input" [(ngModel)]="slotForm.moduleId">
+                <option value="0">— Select module —</option>
+                @for (m of modules(); track m.id) {
+                  <option [value]="m.id">{{ m.title }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Instructor</label>
+              <select class="form-input" [(ngModel)]="slotForm.instructorId">
+                <option value="0">— Select instructor —</option>
+                @for (u of instructors(); track u.id) {
+                  <option [value]="u.id">{{ u.name }}</option>
+                }
+              </select>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Day of Week</label>
@@ -220,14 +235,15 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     .weekly-grid { display: grid; grid-template-columns: repeat(7, minmax(120px, 1fr)); gap: 8px; min-width: 840px; }
     .day-col { display: flex; flex-direction: column; gap: 6px; }
     .day-header { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; padding-bottom: 8px; border-bottom: 1px solid var(--border); text-align: center; }
-    .slot-pill { background: var(--accent-dim); border: 1px solid rgba(108,99,255,.25); border-radius: 6px; padding: 8px; }
-    .slot-time { font-size: 11px; color: var(--accent2); font-weight: 600; margin-bottom: 2px; }
+    .slot-pill { background: var(--blue-dim); border: 1px solid rgba(108,99,255,.25); border-radius: 6px; padding: 8px; }
+    .slot-time { font-size: 11px; color: var(--blue); font-weight: 600; margin-bottom: 2px; }
     .empty-placeholder { color: var(--border2); text-align: center; padding: 12px; font-size: 20px; }
   `]
 })
 export class TimetableComponent {
   auth = inject(AuthService);
   private api = inject(ApiService);
+  private title = inject(Title);
   private toast = inject(ToastService);
 
   DAYS = DAYS;
@@ -239,6 +255,8 @@ export class TimetableComponent {
   showExceptionModal = signal(false);
   slots = signal<TimetableSlotResponse[]>([]);
   events = signal<TimetableSessionEventResponse[]>([]);
+  instructors = signal<UserResponse[]>([]);
+  modules = signal<ModuleSummaryResponse[]>([]);
 
   slotForm = {
     moduleId: 0,
@@ -262,8 +280,14 @@ export class TimetableComponent {
   };
 
   ngOnInit() {
+    this.title.setTitle('Timetable — CollegeLMS');
     this.reloadSlots();
     this.reloadEvents();
+    // Fetch dropdowns for slot creation (Admin only)
+    if (this.auth.isAdmin()) {
+      this.api.getUsers().subscribe({ next: us => this.instructors.set(us.filter(u => u.role === 'Instructor')), error: () => {} });
+      this.api.getModules().subscribe({ next: ms => this.modules.set(ms), error: () => {} });
+    }
   }
 
   canCreateException() {
