@@ -1,6 +1,6 @@
 # Handoff Note — Person 2 (System Designer & UML Lead)
 
-From Person 1 | Updated: 2026-05-07
+From Person 1 | Updated: 2026-05-16
 
 ---
 
@@ -13,7 +13,7 @@ From Person 1 | Updated: 2026-05-07
 | ER diagram | Not started |
 | Use case diagram | Not started |
 | Sequence diagrams | Not started |
-| `docs/risk-assessment.md` | File exists but empty — needs content |
+| `docs/risk-assessment.md` | Done |
 
 All diagrams should be saved under `docs/diagrams/` as PNG or SVG files.
 
@@ -59,6 +59,8 @@ All 14 entities are implemented in the backend and have applied migrations. Use 
 | Title | string | |
 | Description | string | |
 | InstructorId | int | FK → User |
+| StartDate | DateTime? | nullable — semester start |
+| EndDate | DateTime? | nullable — semester end |
 | Modules | ICollection\<Module\> | navigation |
 
 ### `Module`
@@ -98,6 +100,7 @@ All 14 entities are implemented in the backend and have applied migrations. Use 
 | Description | string | |
 | ScheduledAt | DateTime | |
 | Duration | int | minutes |
+| Location | string | room or venue |
 
 ### `AssignmentGrade`
 | Property | Type | Notes |
@@ -127,6 +130,7 @@ All 14 entities are implemented in the backend and have applied migrations. Use 
 | ModuleId | int | FK → Module |
 | Status | string | `InProgress`, `Passed`, `Failed` |
 | FinalGrade | double? | nullable — only set once all items in module are graded |
+| IsReleased | bool | false until instructor releases the final grade to the student |
 
 ### `AttendanceSession`
 | Property | Type | Notes |
@@ -174,7 +178,11 @@ All 14 entities are implemented in the backend and have applied migrations. Use 
 |---|---|---|
 | Id | int | PK |
 | UserId | int | FK → User |
-| AssignmentId | int? | nullable FK |
+| AssignmentId | int? | nullable FK → Assignment |
+| AssessmentId | int? | nullable FK → Assessment |
+| ModuleId | int? | nullable FK → Module |
+| TimetableExceptionId | int? | nullable FK → TimetableException |
+| Type | string | `General`, `ClassCancelled`, `ClassRescheduled`, `AssignmentDeadline`, `AssessmentDate`, `AssignmentGraded`, `FinalGradeReleased` |
 | Message | string | |
 | IsRead | bool | |
 | CreatedAt | DateTime | UTC |
@@ -191,6 +199,7 @@ Module ──────────────► Assessment        (one-to-m
 Module ──────────────► TimetableSlot     (one-to-many)
 Module ──────────────► AttendanceSession (one-to-many)
 TimetableSlot ───────► TimetableException (one-to-many)
+AttendanceSession ───► AttendanceRecord  (one-to-many)
 Assignment ──────────► Submission        (one-to-many)
 Submission ──────────► AssignmentGrade   (one-to-one)
 Assessment ──────────► AssessmentGrade   (one per student)
@@ -291,11 +300,6 @@ Save each to `docs/diagrams/`:
 | `seq-mark-attendance.png` | Instructor creates session → marks per student → saves records |
 | `seq-grade-release.png` | Instructor grades last item → FinalGrade set → notification sent |
 | `seq-deadline-reminder.png` | Background service fires → queries deadlines → sends email + notification |
-
-### 5. Risk Assessment
-File: `docs/risk-assessment.md`
-Currently empty. Write a table of 6-10 risks covering technical, security, team, and timeline categories.
-Suggested columns: Risk | Likelihood | Impact | Mitigation
 
 ---
 

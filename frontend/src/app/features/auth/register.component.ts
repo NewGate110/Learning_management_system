@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { Title } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-register',
@@ -23,17 +24,34 @@ import { ToastService } from '../../core/services/toast.service';
 
           <div class="field">
             <label>Full name</label>
-            <input type="text" [(ngModel)]="name" name="name" placeholder="Jane Smith" required>
+            <input type="text" [(ngModel)]="name" name="name"
+              [class.input-error]="touched && !name"
+              placeholder="Jane Smith">
+            @if (touched && !name) {
+              <span class="field-error">Full name is required</span>
+            }
           </div>
 
           <div class="field">
             <label>Email</label>
-            <input type="email" [(ngModel)]="email" name="email" placeholder="you@college.edu" required>
+            <input type="email" [(ngModel)]="email" name="email"
+              [class.input-error]="touched && !email"
+              placeholder="you@college.edu">
+            @if (touched && !email) {
+              <span class="field-error">Email is required</span>
+            }
           </div>
 
           <div class="field">
             <label>Password</label>
-            <input type="password" [(ngModel)]="password" name="password" placeholder="Min 8 characters" required minlength="8">
+            <input type="password" [(ngModel)]="password" name="password"
+              [class.input-error]="touched && password.length > 0 && password.length < 8"
+              placeholder="Min 8 characters">
+            @if (touched && !password) {
+              <span class="field-error">Password is required</span>
+            } @else if (touched && password.length > 0 && password.length < 8) {
+              <span class="field-error">Password must be at least 8 characters</span>
+            }
           </div>
 
           @if (error()) {
@@ -61,26 +79,19 @@ import { ToastService } from '../../core/services/toast.service';
   styles: [`
     .auth-page { min-height: 100vh; display: flex; }
     .auth-panel {
-      width: 480px;
-      min-width: 480px;
+      width: 480px; min-width: 480px;
       background: var(--surface);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 48px 56px;
-      gap: 32px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 48px 56px; gap: 32px;
     }
     .auth-brand { text-align: center; }
     .logo-mark {
       display: inline-block;
-      background: var(--accent);
-      color: #fff;
-      font-family: 'DM Serif Display', serif;
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-size: 16px;
-      margin-bottom: 12px;
+      background: var(--blue); color: #fff;
+      font-family: 'Poppins', sans-serif;
+      padding: 6px 14px; border-radius: 8px;
+      font-size: 16px; margin-bottom: 12px;
     }
     .auth-brand h1 { font-size: 1.6rem; }
     .auth-form { width: 100%; display: flex; flex-direction: column; gap: 18px; }
@@ -89,45 +100,35 @@ import { ToastService } from '../../core/services/toast.service';
     .field { display: flex; flex-direction: column; gap: 6px; }
     .field label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
     .field input {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
+      width: 100%; background: var(--bg);
+      border: 1.5px solid var(--border);
       border-radius: var(--radius-sm);
-      padding: 10px 14px;
-      color: var(--text);
-      font: inherit;
-      outline: none;
+      padding: 10px 14px; color: var(--text);
+      font-family: var(--font-body); font-size: 15px; outline: none;
+      transition: border-color .2s, box-shadow .2s;
     }
-    .field input:focus { border-color: var(--accent); }
+    .field input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+    .input-error { border-color: var(--red) !important; box-shadow: 0 0 0 3px var(--red-dim) !important; }
+    .field-error { font-size: 12px; color: var(--red); margin-top: 2px; }
     .auth-error {
-      background: var(--red-dim);
-      color: var(--red);
-      padding: 10px 14px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
+      background: var(--red-dim); color: var(--red);
+      padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px;
     }
     .auth-link { text-align: center; font-size: 14px; color: var(--muted); }
     .auth-art {
-      flex: 1;
-      background: var(--bg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      overflow: hidden;
+      flex: 1; background: var(--navy);
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
     }
     .auth-art::before {
-      content: '';
-      position: absolute;
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, rgba(45,106,79,.4) 0%, transparent 70%);
-      bottom: -100px;
-      left: -100px;
+      content: ''; position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(37,99,235,.3) 0%, transparent 70%);
+      bottom: -100px; left: -100px;
     }
-    .art-inner { position: relative; z-index: 1; padding: 48px; color: #fff; }
+    .art-inner { position: relative; z-index: 1; padding: 48px; }
     .art-inner h2 { font-size: 3rem; line-height: 1.1; color: #fff; margin-bottom: 24px; }
-    .art-inner h2 em { font-style: italic; color: var(--accent2); }
+    .art-inner h2 em { font-style: italic; color: rgba(251,191,36,1); }
     .art-inner p { color: rgba(255,255,255,.6); font-size: 16px; max-width: 320px; }
     @media (max-width: 900px) {
       .auth-art { display: none; }
@@ -136,20 +137,25 @@ import { ToastService } from '../../core/services/toast.service';
   `]
 })
 export class RegisterComponent {
-  private auth = inject(AuthService);
+  private auth   = inject(AuthService);
   private router = inject(Router);
-  private toast = inject(ToastService);
+  private toast  = inject(ToastService);
+  private title  = inject(Title);
 
-  name = '';
-  email = '';
+  name     = '';
+  email    = '';
   password = '';
-  loading = signal(false);
-  error = signal('');
+  touched  = false;
+  loading  = signal(false);
+  error    = signal('');
+
+  ngOnInit() {
+    this.title.setTitle('Register — CollegeLMS');
+  }
 
   submit() {
-    if (!this.name || !this.email || !this.password) {
-      return;
-    }
+    this.touched = true;
+    if (!this.name || !this.email || !this.password || this.password.length < 8) return;
 
     this.loading.set(true);
     this.error.set('');
@@ -160,7 +166,7 @@ export class RegisterComponent {
         this.router.navigate(['/login']);
       },
       error: (e) => {
-        this.error.set(e.error?.message ?? 'Registration failed');
+        this.error.set(e.error?.message ?? 'Registration failed. Please try again.');
         this.loading.set(false);
       }
     });

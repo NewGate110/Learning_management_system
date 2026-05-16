@@ -1,3 +1,4 @@
+import { Title } from '@angular/platform-browser';
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -105,17 +106,18 @@ import { UserResponse } from '../../core/models';
     .user-av {
       width: 32px; height: 32px;
       background: var(--accent-dim);
-      border: 1px solid var(--accent);
+      border: 1px solid var(--blue);
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 13px; font-weight: 600;
-      color: var(--accent2);
+      color: var(--blue);
       flex-shrink: 0;
     }
   `]
 })
 export class UsersComponent implements OnInit {
   private api   = inject(ApiService);
+  private title = inject(Title);
   private toast = inject(ToastService);
 
   users       = signal<UserResponse[]>([]);
@@ -132,6 +134,7 @@ export class UsersComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.title.setTitle('Users — CollegeLMS');
     this.api.getUsers().subscribe({ next: us => { this.users.set(us); this.loading.set(false); }, error: () => this.loading.set(false) });
   }
 

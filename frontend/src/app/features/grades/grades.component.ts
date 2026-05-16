@@ -1,3 +1,4 @@
+import { Title } from '@angular/platform-browser';
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
@@ -79,15 +80,16 @@ import { AssignmentGradeResponse } from '../../core/models';
     </div>
   `,
   styles: [`
-    .score-big { font-family: 'DM Serif Display',serif; font-size: 24px; letter-spacing: -1px; line-height: 1; }
+    .score-big { font-family: 'Poppins',sans-serif; font-size: 24px; letter-spacing: -1px; line-height: 1; }
     .score-big.good { color: var(--green); }
-    .score-big.ok   { color: var(--yellow); }
+    .score-big.ok   { color: var(--amber); }
     .score-big.bad  { color: var(--red); }
   `]
 })
 export class GradesComponent implements OnInit {
   auth     = inject(AuthService);
   private api = inject(ApiService);
+  private title = inject(Title);
 
   grades  = signal<AssignmentGradeResponse[]>([]);
   loading = signal(true);
@@ -95,11 +97,12 @@ export class GradesComponent implements OnInit {
   average  = computed(() => this.grades().length ? this.grades().reduce((a, g) => a + g.score, 0) / this.grades().length : 0);
   highest  = computed(() => this.grades().length ? Math.max(...this.grades().map(g => g.score)) : 0);
   lowest   = computed(() => this.grades().length ? Math.min(...this.grades().map(g => g.score)) : 0);
-  avgColor = computed(() => this.average() >= 75 ? 'var(--green)' : this.average() >= 50 ? 'var(--yellow)' : 'var(--red)');
+  avgColor = computed(() => this.average() >= 75 ? 'var(--green)' : this.average() >= 50 ? 'var(--amber)' : 'var(--red)');
 
   scoreClass(s: number) { return s >= 75 ? 'good' : s >= 50 ? 'ok' : 'bad'; }
 
   ngOnInit() {
+    this.title.setTitle('Grades — CollegeLMS');
     this.api.getMyGrades().subscribe({ next: gs => { this.grades.set(gs); this.loading.set(false); }, error: () => this.loading.set(false) });
   }
 }

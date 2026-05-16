@@ -1,3 +1,4 @@
+import { Title } from '@angular/platform-browser';
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -36,12 +37,12 @@ import { StudentDashboardResponse, InstructorDashboardResponse, AdminDashboardRe
           </div>
           <div class="stat-card">
             <div class="stat-icon">📅</div>
-            <div class="stat-value" style="color:var(--accent2)">{{ student()!.upcomingItems.length }}</div>
+            <div class="stat-value" style="color:var(--blue)">{{ student()!.upcomingItems.length }}</div>
             <div class="stat-label">Upcoming Items</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">📊</div>
-            <div class="stat-value" style="color:var(--yellow)">{{ student()!.modules.length }}</div>
+            <div class="stat-value" style="color:var(--amber)">{{ student()!.modules.length }}</div>
             <div class="stat-label">Modules</div>
           </div>
         </div>
@@ -143,7 +144,7 @@ import { StudentDashboardResponse, InstructorDashboardResponse, AdminDashboardRe
           </div>
           <div class="stat-card">
             <div class="stat-icon">📝</div>
-            <div class="stat-value" style="color:var(--yellow)">{{ instructor()!.pendingSubmissionCount }}</div>
+            <div class="stat-value" style="color:var(--amber)">{{ instructor()!.pendingSubmissionCount }}</div>
             <div class="stat-label">Pending Submissions</div>
           </div>
           <div class="stat-card">
@@ -196,7 +197,7 @@ import { StudentDashboardResponse, InstructorDashboardResponse, AdminDashboardRe
           </div>
           <div class="stat-card">
             <div class="stat-icon">📚</div>
-            <div class="stat-value" style="color:var(--accent2)">{{ admin()!.totalCourses }}</div>
+            <div class="stat-value" style="color:var(--blue)">{{ admin()!.totalCourses }}</div>
             <div class="stat-label">Courses</div>
           </div>
           <div class="stat-card">
@@ -206,7 +207,7 @@ import { StudentDashboardResponse, InstructorDashboardResponse, AdminDashboardRe
           </div>
           <div class="stat-card">
             <div class="stat-icon">📝</div>
-            <div class="stat-value" style="color:var(--yellow)">{{ admin()!.totalAssignments }}</div>
+            <div class="stat-value" style="color:var(--amber)">{{ admin()!.totalAssignments }}</div>
             <div class="stat-label">Assignments</div>
           </div>
           <div class="stat-card">
@@ -244,6 +245,7 @@ import { StudentDashboardResponse, InstructorDashboardResponse, AdminDashboardRe
 export class DashboardComponent implements OnInit {
   auth       = inject(AuthService);
   private api = inject(ApiService);
+  private title = inject(Title);
 
   loading    = signal(true);
   student    = signal<StudentDashboardResponse | null>(null);
@@ -253,6 +255,13 @@ export class DashboardComponent implements OnInit {
   completedCount = () => this.student()?.courses.filter(c => c.isCompleted).length ?? 0;
 
   ngOnInit() {
+    this.title.setTitle('Dashboard — CollegeLMS');
+    // Reset state on every navigation to this page
+    this.loading.set(true);
+    this.student.set(null);
+    this.instructor.set(null);
+    this.admin.set(null);
+
     const role = this.auth.role();
     if (role === 'Student') {
       this.api.getStudentDashboard().subscribe({ next: d => { this.student.set(d); this.loading.set(false); }, error: () => this.loading.set(false) });

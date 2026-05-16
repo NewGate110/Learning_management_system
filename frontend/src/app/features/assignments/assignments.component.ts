@@ -1,3 +1,4 @@
+import { Title } from '@angular/platform-browser';
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -28,7 +29,7 @@ import { ToastService } from '../../core/services/toast.service';
         </div>
       } @else {
         <div class="card fade-up fade-up-1">
-          <table class="lms-table">
+          <table class="">
             <thead>
               <tr>
                 <th>Student</th>
@@ -103,7 +104,7 @@ import { ToastService } from '../../core/services/toast.service';
     }
   `,
   styles: [`
-    .grade-info { background: var(--lms-surface); padding: 14px; border-radius: var(--lms-radius-sm); }
+    .grade-info { background: var(--surface); padding: 14px; border-radius: var(--radius-sm); }
     .mt-8 { margin-top: 8px; }
     .mt-16 { margin-top: 16px; }
   `]
@@ -111,6 +112,7 @@ import { ToastService } from '../../core/services/toast.service';
 export class AssignmentsComponent implements OnInit {
   auth     = inject(AuthService);
   private api   = inject(ApiService);
+  private title = inject(Title);
   private toast = inject(ToastService);
 
   submissions = signal<any[]>([]);
@@ -121,6 +123,7 @@ export class AssignmentsComponent implements OnInit {
   feedback = '';
 
   ngOnInit() {
+    this.title.setTitle('Assignments — CollegeLMS');
     this.api.getPendingSubmissions().subscribe({
       next: s => { this.submissions.set(s); this.loading.set(false); },
       error: () => this.loading.set(false)
